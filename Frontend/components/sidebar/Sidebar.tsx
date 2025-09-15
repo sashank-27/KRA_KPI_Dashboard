@@ -1,0 +1,371 @@
+"use client"
+
+import React, { useState } from "react"
+import { motion } from "framer-motion"
+import {
+  Bell,
+  ChevronDown,
+  Home,
+  Layers,
+  Menu,
+  PanelLeft,
+  Search,
+  Target,
+  ClipboardList,
+  User as UserIcon,
+  Users,
+  Wand2,
+  X,
+} from "lucide-react"
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
+import { User } from "@/lib/types"
+
+// Sample data for sidebar navigation
+const sidebarItems = [
+  {
+    title: "Dashboard",
+    icon: <Home />,
+    isActive: false,
+  },
+  {
+    title: "My KRA",
+    icon: <Target />,
+    isActive: false,
+  },
+  {
+    title: "Daily Tasks",
+    icon: <ClipboardList />,
+    isActive: false,
+  },
+  {
+    title: "Management",
+    icon: <Layers />,
+    items: [
+      { title: "All Management", url: "#" },
+      { title: "User Management", url: "#" },
+      { title: "Department Management", url: "#"},
+      { title: "KRA Management", url: "#"},
+    ],
+  },
+]
+
+interface SidebarProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
+  expandedItems: Record<string, boolean>;
+  setExpandedItems: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  activeManagementView: "all" | "user" | "department" | "kra";
+  setActiveManagementView: (view: "all" | "user" | "department" | "kra") => void;
+  currentUser: User;
+}
+
+export function Sidebar({
+  activeTab,
+  setActiveTab,
+  sidebarOpen,
+  setSidebarOpen,
+  mobileMenuOpen,
+  setMobileMenuOpen,
+  expandedItems,
+  setExpandedItems,
+  activeManagementView,
+  setActiveManagementView,
+  currentUser,
+}: SidebarProps) {
+  const toggleExpanded = (title: string) => {
+    setExpandedItems((prev: Record<string, boolean>) => {
+      const newItems = { ...prev }
+      newItems[title] = !prev[title]
+      return newItems
+    })
+  }
+
+  const handleManagementClick = (view: "all" | "user" | "department" | "kra") => {
+    setActiveManagementView(view)
+    setActiveTab("apps") // Switch to management tab
+  }
+
+  return (
+    <>
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      {/* Sidebar - Mobile */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 transform bg-background transition-transform duration-300 ease-in-out md:hidden",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex h-full flex-col border-r">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+                <Wand2 className="size-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                <p className="text-xs text-muted-foreground">Performance Management</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="px-3 py-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 px-3 py-2">
+            <div className="space-y-1">
+              {sidebarItems.map((item) => (
+                <div key={item.title} className="mb-1">
+                  <button
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium",
+                      (item.title === "Dashboard" && activeTab === "home") || 
+                      (item.title === "My KRA" && activeTab === "my-kra") ||
+                      (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
+                      (item.title === "Management" && activeTab === "apps") 
+                        ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                    )}
+                    onClick={() => {
+                      if (item.title === "Dashboard") {
+                        setActiveTab("home")
+                        setMobileMenuOpen(false)
+                      } else if (item.title === "My KRA") {
+                        setActiveTab("my-kra")
+                        setMobileMenuOpen(false)
+                      } else if (item.title === "Daily Tasks") {
+                        setActiveTab("my-tasks")
+                        setMobileMenuOpen(false)
+                      } else if (item.items) {
+                        toggleExpanded(item.title)
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.icon}
+                      <span>{item.title}</span>
+                    </div>
+
+                    {item.items && (
+                      <ChevronDown
+                        className={cn(
+                          "ml-2 h-4 w-4 transition-transform",
+                          expandedItems[item.title] ? "rotate-180" : "",
+                        )}
+                      />
+                    )}
+                  </button>
+
+                  {item.items && expandedItems[item.title] && (
+                    <div className="mt-1 ml-6 space-y-1 border-l pl-3">
+                      {item.items.map((subItem) => (
+                        <button
+                          key={subItem.title}
+                          onClick={() => {
+                            if (item.title === "Management") {
+                              if (subItem.title === "All Management") {
+                                handleManagementClick("all")
+                              } else if (subItem.title === "User Management") {
+                                handleManagementClick("user")
+                              } else if (subItem.title === "Department Management") {
+                                handleManagementClick("department")
+                              } else if (subItem.title === "KRA Management") {
+                                handleManagementClick("kra")
+                              }
+                            }
+                          }}
+                          className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted text-left"
+                        >
+                          {subItem.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <div className="border-t p-3">
+            <div className="space-y-2">     
+              {/* New Profile Section */}
+              <div className="rounded-2xl bg-gradient-to-r from-purple-50 to-blue-50 p-3 dark:from-purple-950/20 dark:to-blue-950/20">
+                <button 
+                  className="flex w-full items-center gap-3 rounded-xl p-2 hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
+                  onClick={() => {
+                    setActiveTab("profile")
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  <Avatar className="h-8 w-8 ring-2 ring-white dark:ring-gray-800">
+                    <AvatarImage src={currentUser?.avatar ?? ""} alt="User" />
+                    <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                      {(currentUser?.name ?? "")
+                        .split(' ')
+                        .filter(Boolean)
+                        .map(n => n[0])
+                        .join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {currentUser?.name ?? "User"}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {currentUser?.role ?? "user"}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar - Desktop */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden w-64 transform border-r bg-background transition-transform duration-300 ease-in-out md:block",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex h-full flex-col">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+                <Wand2 className="size-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                <p className="text-xs text-muted-foreground">Performance Management</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-3 py-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 px-3 py-2">
+            <div className="space-y-1">
+              {sidebarItems.map((item) => (
+                <div key={item.title} className="mb-1">
+                  <button
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium",
+                      (item.title === "Dashboard" && activeTab === "home") || 
+                      (item.title === "My KRA" && activeTab === "my-kra") ||
+                      (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
+                      (item.title === "Management" && activeTab === "apps") 
+                        ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                    )}
+                    onClick={() => {
+                      if (item.title === "Dashboard") {
+                        setActiveTab("home")
+                      } else if (item.items) {
+                        toggleExpanded(item.title)
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.icon}
+                      <span>{item.title}</span>
+                    </div>
+
+                    {item.items && (
+                      <ChevronDown
+                        className={cn(
+                          "ml-2 h-4 w-4 transition-transform",
+                          expandedItems[item.title] ? "rotate-180" : "",
+                        )}
+                      />
+                    )}
+                  </button>
+
+                  {item.items && expandedItems[item.title] && (
+                    <div className="mt-1 ml-6 space-y-1 border-l pl-3">
+                      {item.items.map((subItem) => (
+                        <button
+                          key={subItem.title}
+                          onClick={() => {
+                            if (item.title === "Management") {
+                              if (subItem.title === "All Management") {
+                                handleManagementClick("all")
+                              } else if (subItem.title === "User Management") {
+                                handleManagementClick("user")
+                              } else if (subItem.title === "Department Management") {
+                                handleManagementClick("department")
+                              } else if (subItem.title === "KRA Management") {
+                                handleManagementClick("kra")
+                              }
+                            }
+                          }}
+                          className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted text-left"
+                        >
+                          {subItem.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <div className="border-t p-3">
+            <div className="space-y-2">  
+              {/* New Profile Section */}
+              <div className="rounded-2xl bg-gradient-to-r from-purple-50 to-blue-50 p-3 dark:from-purple-950/20 dark:to-blue-950/20">
+                <button 
+                  className="flex w-full items-center gap-3 rounded-xl p-2 hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
+                  onClick={() => setActiveTab("profile")}
+                >
+                  <Avatar className="h-8 w-8 ring-2 ring-white dark:ring-gray-800">
+                    <AvatarImage src={currentUser?.avatar ?? ""} alt="User" />
+                    <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                      {(currentUser?.name ?? "")
+                        .split(' ')
+                        .filter(Boolean)
+                        .map(n => n[0])
+                        .join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {currentUser?.name ?? "User"}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {currentUser?.role ?? "user"}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}

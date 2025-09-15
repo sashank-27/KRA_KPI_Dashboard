@@ -1,0 +1,294 @@
+// Get current user profile
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate("department", "name")
+      .populate("createdBy", "name email");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    // Return user data without password
+    const { password, ...userWithoutPassword } = user.toObject();
+    res.status(200).json(userWithoutPassword);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// Update current user profile
+exports.updateCurrentUser = async (req, res) => {
+  try {
+    const { username, name, email, avatar } = req.body;
+    const update = { username, name, email, avatar };
+    
+    // Remove undefined fields
+    Object.keys(update).forEach(
+      (key) => update[key] === undefined && delete update[key]
+    );
+    
+    const user = await User.findByIdAndUpdate(req.user.id, update, {
+      new: true,
+      runValidators: true,
+    }).populate("department", "name");
+    
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    // Return user data without password
+    const { password, ...userWithoutPassword } = user.toObject();
+    res.status(200).json(userWithoutPassword);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// List all users
+exports.getAllUsers = async (req, res) => {
+  try {
+    // Hide superadmin users from non-superadmin users
+    const query = req.user.role === "superadmin" ? {} : { isSuperAdmin: { $ne: true } };
+    
+    console.log('User role:', req.user.role);
+    console.log('Query:', query);
+    
+    const users = await User.find(query)
+      .populate("department", "name")
+      .populate("createdBy", "name email");
+    
+    console.log('Returning users:', users.length);
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// Get single user by id
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate("department", "name")
+      .populate("createdBy", "name email");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// Update user
+exports.updateUser = async (req, res) => {
+  try {
+    // Check if user exists and is not superadmin
+    const existingUser = await User.findById(req.params.id);
+    if (!existingUser) return res.status(404).json({ error: "User not found" });
+    
+    // Prevent modification of superadmin users by non-superadmin users
+    if ((existingUser.isSuperAdmin || existingUser.role === "superadmin") && req.user.role !== "superadmin") {
+      return res.status(403).json({ error: "Cannot modify superadmin user" });
+    }
+    
+    const { username, name, email, role, department, avatar } = req.body;
+    const update = { username, name, email, role, department, avatar };
+    
+    // Prevent changing superadmin role
+    if (existingUser.isSuperAdmin || existingUser.role === "superadmin") {
+      delete update.role;
+      delete update.isSuperAdmin;
+    }
+    
+    // Remove undefined fields
+    Object.keys(update).forEach(
+      (key) => update[key] === undefined && delete update[key]
+    );
+    
+    // For profile updates, we don't require all fields
+    const user = await User.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    }).populate("department", "name");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// Reset user password (admin only)
+exports.resetUserPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return res.status(400).json({ error: "New password is required" });
+    }
+    
+    const hash = await bcrypt.hash(newPassword, 10);
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { password: hash },
+      { new: true }
+    ).populate("department", "name");
+    
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// Delete user
+exports.deleteUser = async (req, res) => {
+  try {
+    // Check if user exists and is not superadmin
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    // Prevent deletion of superadmin users
+    if (user.isSuperAdmin || user.role === "superadmin") {
+      return res.status(403).json({ error: "Cannot delete superadmin user" });
+    }
+    
+    await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+const User = require("../models/User");
+const Department = require("../models/Department");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+
+const jwtSecret = process.env.JWT_SECRET || "secretkey";
+
+// System health check
+exports.getSystemHealth = async (req, res) => {
+  try {
+    const healthStatus = {
+      database: { status: 'offline', message: 'Database connection failed' },
+      apiServices: { status: 'offline', message: 'API services unavailable' },
+      userManagement: { status: 'offline', message: 'User management service down' },
+      backupSystem: { status: 'offline', message: 'Backup system not responding' }
+    };
+
+    // Check database connection
+    try {
+      if (mongoose.connection.readyState === 1) {
+        // Test database with a simple query
+        await User.findOne().limit(1);
+        healthStatus.database = { status: 'online', message: 'Database connected' };
+      }
+    } catch (dbError) {
+      healthStatus.database = { status: 'offline', message: 'Database query failed' };
+    }
+
+    // Check API services (if we can reach here, API is working)
+    healthStatus.apiServices = { status: 'online', message: 'API services operational' };
+
+    // Check user management service
+    try {
+      const userCount = await User.countDocuments();
+      healthStatus.userManagement = { status: 'online', message: `User management active (${userCount} users)` };
+    } catch (userError) {
+      healthStatus.userManagement = { status: 'offline', message: 'User management service error' };
+    }
+
+    // Check backup system (simulate - in real app, this would check actual backup status)
+    try {
+      const deptCount = await Department.countDocuments();
+      healthStatus.backupSystem = { status: 'online', message: `Backup system active (${deptCount} departments)` };
+    } catch (backupError) {
+      healthStatus.backupSystem = { status: 'pending', message: 'Backup system pending' };
+    }
+
+    // Determine overall system status
+    const allOnline = Object.values(healthStatus).every(service => service.status === 'online');
+    const overallStatus = allOnline ? 'healthy' : 'degraded';
+
+    res.status(200).json({
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      services: healthStatus
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'System health check failed',
+      error: error.message
+    });
+  }
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return res.status(401).json({ error: "Invalid credentials" });
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+  const token = jwt.sign(
+    { id: user._id, email: user.email, role: user.role },
+    jwtSecret,
+    { expiresIn: "7d" }
+  );
+  res.json({ token });
+};
+
+exports.createUser = async (req, res) => {
+  const { username, name, email, password, role, department } = req.body;
+  if (!username || !name || !email || !password || !role || !department)
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: username, name, email, password, role, department" });
+  
+  // Check if user already exists
+  const existingUser = await User.findOne({ 
+    $or: [{ email }, { username }] 
+  });
+  if (existingUser) {
+    if (existingUser.email === email) {
+      return res.status(400).json({ error: "A user with this email already exists" });
+    }
+    if (existingUser.username === username) {
+      return res.status(400).json({ error: "A user with this username already exists" });
+    }
+  }
+
+  // Validate department exists
+  const Department = require("../models/Department");
+  const departmentExists = await Department.findById(department);
+  if (!departmentExists) {
+    return res.status(400).json({ error: "Invalid department selected" });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+  try {
+    const user = await User.create({ 
+      username, 
+      name, 
+      email, 
+      password: hash, 
+      role, 
+      department,
+      createdBy: req.user.id // Set the current user as the creator
+    });
+    
+    // Populate the created user with department and createdBy info
+    const populatedUser = await User.findById(user._id)
+      .populate("department", "name")
+      .populate("createdBy", "name email");
+    
+    res.json({
+      _id: populatedUser._id,
+      username: populatedUser.username,
+      name: populatedUser.name,
+      email: populatedUser.email,
+      role: populatedUser.role,
+      department: populatedUser.department,
+      joined: populatedUser.joined,
+      createdBy: populatedUser.createdBy,
+    });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ error: "Failed to create user", details: err.message });
+  }
+};
