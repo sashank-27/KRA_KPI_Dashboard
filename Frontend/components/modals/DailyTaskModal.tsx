@@ -43,8 +43,8 @@ export function DailyTaskModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!newTask.srId.trim()) {
-      newErrors.srId = "SR-ID is required";
+    if (!newTask.task.trim()) {
+      newErrors.task = "Task is required";
     }
 
     if (!newTask.remarks.trim()) {
@@ -93,10 +93,30 @@ export function DailyTaskModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Task */}
+          <div className="space-y-2">
+            <Label htmlFor="task" className="text-sm font-medium">
+              Task <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="task"
+              placeholder="Enter task description"
+              value={newTask.task}
+              onChange={(e) => handleInputChange("task", e.target.value)}
+              className={errors.task ? "border-red-500" : ""}
+            />
+            {errors.task && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.task}
+              </p>
+            )}
+          </div>
+
           {/* SR-ID */}
           <div className="space-y-2">
             <Label htmlFor="srId" className="text-sm font-medium">
-              SR-ID <span className="text-red-500">*</span>
+              SR-ID
             </Label>
             <Input
               id="srId"
@@ -146,12 +166,6 @@ export function DailyTaskModal({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="open">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    Open
-                  </div>
-                </SelectItem>
                 <SelectItem value="in-progress">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>

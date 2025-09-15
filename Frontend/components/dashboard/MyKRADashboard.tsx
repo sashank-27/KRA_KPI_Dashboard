@@ -49,6 +49,14 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
   const fetchUserKRAs = async () => {
     try {
       setIsLoading(true);
+      console.log("Fetching KRAs for currentUserId:", currentUserId);
+      
+      if (!currentUserId) {
+        console.error("No currentUserId provided");
+        setKras([]);
+        return;
+      }
+      
       const res = await fetch(`http://localhost:5000/api/kras/user/${currentUserId}`, {
         headers: getAuthHeaders(),
         credentials: "include",

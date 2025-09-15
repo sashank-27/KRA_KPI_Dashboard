@@ -65,9 +65,10 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<DailyTask | null>(null);
   const [newTask, setNewTask] = useState<NewDailyTask>({
+    task: "",
     srId: "",
     remarks: "",
-    status: "open",
+    status: "in-progress",
     date: new Date().toISOString().split('T')[0],
     tags: [],
   });
@@ -76,7 +77,6 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [stats, setStats] = useState({
     total: 0,
-    open: 0,
     inProgress: 0,
     closed: 0,
   });
@@ -154,7 +154,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
         setNewTask({
           srId: "",
           remarks: "",
-          status: "open",
+          status: "in-progress",
           date: new Date().toISOString().split('T')[0],
           tags: [],
         });
@@ -269,7 +269,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
 
   // Filter tasks
   const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.srId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = task.task.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.remarks.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || task.status === statusFilter;
     const matchesDepartment = departmentFilter === "all" || 
@@ -324,27 +324,11 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-2xl border shadow-sm p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.open}</p>
-              <p className="text-sm text-gray-600">Open</p>
-            </div>
-          </div>
-        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-white rounded-2xl border shadow-sm p-6"
         >
           <div className="flex items-center gap-3">
@@ -361,7 +345,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
           className="bg-white rounded-2xl border shadow-sm p-6"
         >
           <div className="flex items-center gap-3">
@@ -383,7 +367,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search by SR-ID or remarks..."
+                placeholder="Search by task or remarks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -397,7 +381,6 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
@@ -438,12 +421,12 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4 border-b">
             <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+              <div className="col-span-3">Task</div>
               <div className="col-span-2">SR-ID</div>
-              <div className="col-span-3">Remarks</div>
+              <div className="col-span-2">Remarks</div>
               <div className="col-span-2">User</div>
               <div className="col-span-2">Department</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-1">Date</div>
+              <div className="col-span-1">Status</div>
             </div>
           </div>
           
@@ -455,13 +438,18 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
                 className="px-6 py-4 hover:bg-gray-50/50 transition-colors duration-200"
               >
                 <div className="grid grid-cols-12 gap-4 items-center">
+                  {/* Task */}
+                  <div className="col-span-3">
+                    <p className="font-semibold text-gray-900 truncate">{task.task}</p>
+                  </div>
+                  
                   {/* SR-ID */}
                   <div className="col-span-2">
-                    <p className="font-semibold text-gray-900">{task.srId}</p>
+                    <p className="text-sm text-gray-600 truncate">{task.srId || 'N/A'}</p>
                   </div>
                   
                   {/* Remarks */}
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <p className="text-sm text-gray-700 truncate">{task.remarks}</p>
                   </div>
                   
@@ -490,7 +478,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
                   </div>
                   
                   {/* Status */}
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <div className="flex items-center gap-1">
                       {getStatusIcon(task.status)}
                       <Badge 
@@ -540,6 +528,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
             setEditingTask(null);
           }}
           newTask={{
+            task: editingTask.task,
             srId: editingTask.srId,
             remarks: editingTask.remarks,
             status: editingTask.status,

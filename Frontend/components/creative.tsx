@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Department, NewUser, User, KRA, NewKRA, DailyTask, NewDailyTask } from "@/lib/types";
-import { logout, getAuthHeaders, getCurrentUser, isAuthenticated, requireAuth } from "@/lib/auth";
+import { logout, getAuthHeaders, getCurrentUser, isAuthenticated, requireAuth, isAdmin } from "@/lib/auth";
 import { DepartmentManagement } from "@/components/management/DepartmentManagement";
 import { UserManagement } from "@/components/management/UserManagement";
 import { KRAManagement } from "@/components/management/KRAManagement";
@@ -60,6 +60,15 @@ export function KRADashboard() {
       const userData = await res.json();
       console.log('Current user data from API:', userData);
       setCurrentUser(userData);
+      
+      // Set admin status and adjust default tab
+      const isAdminUser = userData.role === 'admin' || userData.role === 'superadmin';
+      setIsUserAdmin(isAdminUser);
+      
+      // Set default tab based on role
+      if (isAdminUser && activeTab === "my-kra") {
+        setActiveTab("home"); // Admin users start with Dashboard
+      }
     } catch (err) {
       console.error("Failed to fetch current user", err);
       // Fallback to JWT token data (only on client side)
@@ -67,6 +76,9 @@ export function KRADashboard() {
         const tokenUser = getCurrentUser();
         console.log('JWT token user data:', tokenUser);
         if (tokenUser) {
+          const isAdminUser = tokenUser.role === 'admin' || tokenUser.role === 'superadmin';
+          setIsUserAdmin(isAdminUser);
+          
           setCurrentUser({
             _id: tokenUser.id,
             email: tokenUser.email,
@@ -76,8 +88,14 @@ export function KRADashboard() {
             department: "Unknown",
             joined: new Date().toISOString(),
           });
+          
+          // Set default tab based on role
+          if (isAdminUser && activeTab === "my-kra") {
+            setActiveTab("home"); // Admin users start with Dashboard
+          }
         } else {
           // Set a default user if no token is available
+          setIsUserAdmin(false);
           setCurrentUser({
             _id: "guest",
             email: "guest@example.com",
@@ -253,7 +271,8 @@ export function KRADashboard() {
     joined: "",
   });
   const [isLoadingCurrentUser, setIsLoadingCurrentUser] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("home");
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("my-kra"); // Default to my-kra for non-admin users
   const [notifications, setNotifications] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -288,6 +307,15 @@ export function KRADashboard() {
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [isLoadingSystemHealth, setIsLoadingSystemHealth] = useState(true);
   // Modal input state
+
+  // Handle tab access restrictions
+  useEffect(() => {
+    // Only redirect if we have loaded the user data and user is not admin
+    if (!isLoadingCurrentUser && !isUserAdmin && (activeTab === "home" || activeTab === "apps")) {
+      setActiveTab("my-kra");
+    }
+  }, [isUserAdmin, activeTab, isLoadingCurrentUser]);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       {/* Animated gradient background */}
@@ -410,13 +438,15 @@ export function KRADashboard() {
             className="w-full"
           >
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <TabsList className="grid w-full max-w-[1200px] grid-cols-6 rounded-2xl p-1">
-                <TabsTrigger
-                  value="home"
-                  className="rounded-xl data-[state=active]:rounded-xl"
-                >
-                  Dashboard
-                </TabsTrigger>
+              <TabsList className={`grid w-full max-w-[1200px] ${isLoadingCurrentUser ? 'grid-cols-6' : (isUserAdmin ? 'grid-cols-6' : 'grid-cols-4')} rounded-2xl p-1`}>
+                {(isLoadingCurrentUser || isUserAdmin) && (
+                  <TabsTrigger
+                    value="home"
+                    className="rounded-xl data-[state=active]:rounded-xl"
+                  >
+                    Dashboard
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="my-kra"
                   className="rounded-xl data-[state=active]:rounded-xl"
@@ -435,13 +465,15 @@ export function KRADashboard() {
                 >
                   Escalated
                 </TabsTrigger>
-                <TabsTrigger
-                  value="apps"
-                  className="rounded-xl data-[state=active]:rounded-xl"
-                  onClick={() => setActiveManagementView("all")}
-                >
-                  Management
-                </TabsTrigger>
+                {(isLoadingCurrentUser || isUserAdmin) && (
+                  <TabsTrigger
+                    value="apps"
+                    className="rounded-xl data-[state=active]:rounded-xl"
+                    onClick={() => setActiveManagementView("all")}
+                  >
+                    Management
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="profile"
                   className="rounded-xl data-[state=active]:rounded-xl"
@@ -459,97 +491,128 @@ export function KRADashboard() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                <TabsContent value="home" className="space-y-8 mt-0">
-                  <DashboardOverview
-                    users={users}
-                    departments={departments}
-                    systemHealth={systemHealth}
-                    isLoadingSystemHealth={isLoadingSystemHealth}
-                    onCreateUser={() => setCreateUserOpen(true)}
-                    onCreateDepartment={() => setCreateDeptOpen(true)}
-                  />
-                </TabsContent>
+                {isUserAdmin && (
+                  <TabsContent value="home" className="space-y-8 mt-0">
+                    <DashboardOverview
+                      users={users}
+                      departments={departments}
+                      systemHealth={systemHealth}
+                      isLoadingSystemHealth={isLoadingSystemHealth}
+                      onCreateUser={() => setCreateUserOpen(true)}
+                      onCreateDepartment={() => setCreateDeptOpen(true)}
+                    />
+                  </TabsContent>
+                )}
 
                 <TabsContent value="my-kra" className="space-y-8 mt-0">
-                  <MyKRADashboard currentUserId={currentUser._id} />
+                  {currentUser._id ? (
+                    <MyKRADashboard currentUserId={currentUser._id} />
+                  ) : (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading user data...</p>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="my-tasks" className="space-y-8 mt-0">
-                  <MyTasksDashboard 
-                    currentUserId={currentUser._id} 
-                    departments={departments}
-                    users={users}
-                  />
+                  {currentUser._id ? (
+                    <MyTasksDashboard 
+                      currentUserId={currentUser._id} 
+                      departments={departments}
+                      users={users}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading user data...</p>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="escalated-tasks" className="space-y-8 mt-0">
-                  <EscalatedTasksDashboard 
-                    currentUserId={currentUser._id} 
-                    departments={departments}
-                    users={users}
-                  />
+                  {currentUser._id ? (
+                    <EscalatedTasksDashboard 
+                      currentUserId={currentUser._id} 
+                      departments={departments}
+                      users={users}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading user data...</p>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
-                <TabsContent value="apps" className="space-y-6 mt-0">
-                  {/* Management page styled like Files page */}
-                  {(activeManagementView === "all" ||
-                    activeManagementView === "department") && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <DepartmentManagement
-                        departments={departments}
-                        setDepartments={setDepartments}
-                        createDeptOpen={createDeptOpen}
-                        setCreateDeptOpen={setCreateDeptOpen}
-                        newDeptName={newDeptName}
-                        setNewDeptName={setNewDeptName}
-                        users={users}
-                      />
-                    </motion.div>
-                  )}
+                {isUserAdmin && (
+                  <TabsContent value="apps" className="space-y-6 mt-0">
+                    {/* Management page styled like Files page */}
+                    {(activeManagementView === "all" ||
+                      activeManagementView === "department") && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <DepartmentManagement
+                          departments={departments}
+                          setDepartments={setDepartments}
+                          createDeptOpen={createDeptOpen}
+                          setCreateDeptOpen={setCreateDeptOpen}
+                          newDeptName={newDeptName}
+                          setNewDeptName={setNewDeptName}
+                          users={users}
+                        />
+                      </motion.div>
+                    )}
 
-                  {/* User Management section below departments */}
-                  {(activeManagementView === "all" ||
-                    activeManagementView === "user") && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.1 }}
-                    >
-                      <UserManagement
-                        users={users}
-                        setUsers={setUsers}
-                        createUserOpen={createUserOpen}
-                        setCreateUserOpen={setCreateUserOpen}
-                        newUser={newUser}
-                        setNewUser={setNewUser}
-                        departments={departments}
-                        onCreateUser={handleCreateUser}
-                        onUpdateUser={handleUpdateUser}
-                        onDeleteUser={handleDeleteUser}
-                      />
-                    </motion.div>
-                  )}
+                    {/* User Management section below departments */}
+                    {(activeManagementView === "all" ||
+                      activeManagementView === "user") && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                      >
+                        <UserManagement
+                          users={users}
+                          setUsers={setUsers}
+                          createUserOpen={createUserOpen}
+                          setCreateUserOpen={setCreateUserOpen}
+                          newUser={newUser}
+                          setNewUser={setNewUser}
+                          departments={departments}
+                          onCreateUser={handleCreateUser}
+                          onUpdateUser={handleUpdateUser}
+                          onDeleteUser={handleDeleteUser}
+                        />
+                      </motion.div>
+                    )}
 
-                  {/* KRA Management section */}
-                  {(activeManagementView === "all" ||
-                    activeManagementView === "kra") && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                    >
-                      <KRAManagement
-                        departments={departments}
-                        users={users}
-                      />
-                    </motion.div>
-                  )}
+                    {/* KRA Management section */}
+                    {(activeManagementView === "all" ||
+                      activeManagementView === "kra") && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                      >
+                        <KRAManagement
+                          departments={departments}
+                          users={users}
+                        />
+                      </motion.div>
+                    )}
 
-                </TabsContent>
+                  </TabsContent>
+                )}
 
                 <TabsContent value="profile" className="space-y-8 mt-0">
                   {isLoadingCurrentUser ? (

@@ -103,15 +103,16 @@ const getDailyTasksByUser = async (req, res) => {
 const createDailyTask = async (req, res) => {
   try {
     const {
+      task,
       srId,
       remarks,
-      status = "open",
+      status = "in-progress",
       date,
       tags = [],
     } = req.body;
 
     // Validate required fields
-    if (!srId || !remarks) {
+    if (!task || !remarks) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -151,6 +152,7 @@ const createDailyTask = async (req, res) => {
 
     // Create new daily task
     const taskData = {
+      task,
       srId,
       remarks,
       status,
@@ -236,7 +238,7 @@ const updateDailyTaskStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!["open", "in-progress", "closed"].includes(status)) {
+    if (!["in-progress", "closed"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
 
@@ -282,14 +284,13 @@ const getDailyTaskStats = async (req, res) => {
         $group: {
           _id: null,
           total: { $sum: 1 },
-          open: { $sum: { $cond: [{ $eq: ["$status", "open"] }, 1, 0] } },
           inProgress: { $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] } },
           closed: { $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] } },
         }
       }
     ]);
 
-    const result = stats[0] || { total: 0, open: 0, inProgress: 0, closed: 0 };
+    const result = stats[0] || { total: 0, inProgress: 0, closed: 0 };
     
     res.json(result);
   } catch (error) {

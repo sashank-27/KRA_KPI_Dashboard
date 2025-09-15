@@ -81,3 +81,15 @@ export function requireAuth(): void {
     window.location.href = '/login';
   }
 }
+
+// Utility function to check if user is admin or superadmin
+export function isAdmin(): boolean {
+  const user = getCurrentUser();
+  return user ? (user.role === 'admin' || user.role === 'superadmin') : false;
+}
+
+// Utility function to check if user is superadmin
+export function isSuperAdmin(): boolean {
+  const user = getCurrentUser();
+  return user ? user.role === 'superadmin' : false;
+}

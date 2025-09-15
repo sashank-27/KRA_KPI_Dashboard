@@ -264,7 +264,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
                         <ArrowUpRight className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{task.srId}</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{task.task}</h3>
                         <div className="flex flex-wrap gap-2 mb-3">
                           <Badge 
                             variant="secondary"

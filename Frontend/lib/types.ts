@@ -61,9 +61,10 @@ export interface NewKRA {
 
 export interface DailyTask {
   _id: string;
+  task: string;
   srId: string;
   remarks: string;
-  status: "open" | "in-progress" | "closed";
+  status: "in-progress" | "closed";
   date: string;
   user: string | { _id: string; name: string; email: string };
   department: string | { _id: string; name: string };
@@ -86,9 +87,10 @@ export interface DailyTask {
 }
 
 export interface NewDailyTask {
+  task: string;
   srId: string;
   remarks: string;
-  status: "open" | "in-progress" | "closed";
+  status: "in-progress" | "closed";
   date: string;
   tags?: string[];
 }

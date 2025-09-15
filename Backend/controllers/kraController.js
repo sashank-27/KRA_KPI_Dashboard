@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const KRA = require("../models/KRA");
 const User = require("../models/User");
 const Department = require("../models/Department");
@@ -41,16 +42,27 @@ const getKRAById = async (req, res) => {
 const getKRAsByUser = async (req, res) => {
   try {
     const userId = req.params.userId;
+    console.log("Fetching KRAs for user ID:", userId);
+    
+    // Validate ObjectId format
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("Invalid user ID format:", userId);
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+    
     const kras = await KRA.find({ assignedTo: userId })
       .populate("department", "name")
       .populate("assignedTo", "name email")
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 });
 
+    console.log("Found KRAs:", kras.length);
     res.json(kras);
   } catch (error) {
     console.error("Error fetching user KRAs:", error);
-    res.status(500).json({ error: "Failed to fetch user KRAs" });
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ error: "Failed to fetch user KRAs", details: error.message });
   }
 };
 

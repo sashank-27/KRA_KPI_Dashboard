@@ -57,15 +57,15 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [newTask, setNewTask] = useState<NewDailyTask>({
+    task: "",
     srId: "",
     remarks: "",
-    status: "open",
+    status: "in-progress",
     date: new Date().toISOString().split('T')[0],
     tags: [],
   });
   const [stats, setStats] = useState({
     total: 0,
-    open: 0,
     inProgress: 0,
     closed: 0,
   });
@@ -102,7 +102,6 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
       // Calculate stats
       const taskStats = {
         total: data.tasks?.length || 0,
-        open: data.tasks?.filter((task: DailyTask) => task.status === "open").length || 0,
         inProgress: data.tasks?.filter((task: DailyTask) => task.status === "in-progress").length || 0,
         closed: data.tasks?.filter((task: DailyTask) => task.status === "closed").length || 0,
       };
@@ -117,7 +116,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
 
   // Create task
   const handleCreateTask = async () => {
-    if (newTask.srId && newTask.remarks) {
+    if (newTask.task && newTask.remarks) {
       try {
         const res = await fetch("http://localhost:5000/api/daily-tasks", {
           method: "POST",
@@ -140,9 +139,10 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
         setTasks([createdTask, ...tasks]);
         setCreateTaskOpen(false);
         setNewTask({
+          task: "",
           srId: "",
           remarks: "",
-          status: "open",
+          status: "in-progress",
           date: new Date().toISOString().split('T')[0],
           tags: [],
         });
@@ -317,27 +317,11 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-2xl border shadow-sm p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.open}</p>
-              <p className="text-sm text-gray-600">Open</p>
-            </div>
-          </div>
-        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-white rounded-2xl border shadow-sm p-6"
         >
           <div className="flex items-center gap-3">
@@ -354,7 +338,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
           className="bg-white rounded-2xl border shadow-sm p-6"
         >
           <div className="flex items-center gap-3">
@@ -430,7 +414,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                         <ClipboardList className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{task.srId}</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{task.task}</h3>
                         <div className="flex flex-wrap gap-2 mb-3">
                           <Badge 
                             variant="secondary"

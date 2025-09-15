@@ -2,9 +2,14 @@ const mongoose = require("mongoose");
 
 const DailyTaskSchema = new mongoose.Schema(
   {
-    srId: {
+    task: {
       type: String,
       required: true,
+      trim: true,
+    },
+    srId: {
+      type: String,
+      required: false,
       trim: true,
     },
     remarks: {
@@ -14,8 +19,8 @@ const DailyTaskSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["open", "in-progress", "closed"],
-      default: "open",
+      enum: ["in-progress", "closed"],
+      default: "in-progress",
       required: true,
     },
     date: {

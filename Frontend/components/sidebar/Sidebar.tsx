@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   Bell,
@@ -16,6 +16,7 @@ import {
   Users,
   Wand2,
   X,
+  ArrowUpRight,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -25,35 +26,50 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { User } from "@/lib/types"
+import { isAdmin } from "@/lib/auth"
 
 // Sample data for sidebar navigation
-const sidebarItems = [
-  {
-    title: "Dashboard",
-    icon: <Home />,
-    isActive: false,
-  },
-  {
-    title: "My KRA",
-    icon: <Target />,
-    isActive: false,
-  },
-  {
-    title: "Daily Tasks",
-    icon: <ClipboardList />,
-    isActive: false,
-  },
-  {
-    title: "Management",
-    icon: <Layers />,
-    items: [
-      { title: "All Management", url: "#" },
-      { title: "User Management", url: "#" },
-      { title: "Department Management", url: "#"},
-      { title: "KRA Management", url: "#"},
-    ],
-  },
-]
+const getSidebarItems = (isUserAdmin: boolean) => {
+  const baseItems = [
+    {
+      title: "My KRA",
+      icon: <Target />,
+      isActive: false,
+    },
+    {
+      title: "Daily Tasks",
+      icon: <ClipboardList />,
+      isActive: false,
+    },
+    {
+      title: "Escalated",
+      icon: <ArrowUpRight />,
+      isActive: false,
+    },
+  ];
+
+  // Add admin-only items
+  if (isUserAdmin) {
+    baseItems.unshift({
+      title: "Dashboard",
+      icon: <Home />,
+      isActive: false,
+    });
+    
+    baseItems.push({
+      title: "Management",
+      icon: <Layers />,
+      items: [
+        { title: "All Management", url: "#" },
+        { title: "User Management", url: "#" },
+        { title: "Department Management", url: "#"},
+        { title: "KRA Management", url: "#"},
+      ],
+    });
+  }
+
+  return baseItems;
+};
 
 interface SidebarProps {
   activeTab: string;
@@ -82,6 +98,18 @@ export function Sidebar({
   setActiveManagementView,
   currentUser,
 }: SidebarProps) {
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Determine admin status after component mounts to avoid hydration mismatch
+  useEffect(() => {
+    const adminStatus = isAdmin();
+    setIsUserAdmin(adminStatus);
+    setIsLoading(false);
+  }, []);
+
+  const sidebarItems = getSidebarItems(isUserAdmin);
+
   const toggleExpanded = (title: string) => {
     setExpandedItems((prev: Record<string, boolean>) => {
       const newItems = { ...prev }
@@ -93,6 +121,71 @@ export function Sidebar({
   const handleManagementClick = (view: "all" | "user" | "department" | "kra") => {
     setActiveManagementView(view)
     setActiveTab("apps") // Switch to management tab
+  }
+
+  // Show loading state to prevent hydration mismatch
+  if (isLoading) {
+    return (
+      <>
+        {/* Mobile menu overlay */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+        )}
+
+        {/* Sidebar - Mobile Loading */}
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-64 transform bg-background transition-transform duration-300 ease-in-out md:hidden",
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
+          <div className="flex h-full flex-col border-r">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+                  <Wand2 className="size-5" />
+                </div>
+                <div>
+                  <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                  <p className="text-xs text-muted-foreground">Performance Management</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar - Desktop Loading */}
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 z-30 hidden w-64 transform border-r bg-background transition-transform duration-300 ease-in-out md:block",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
+          <div className="flex h-full flex-col">
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+                  <Wand2 className="size-5" />
+                </div>
+                <div>
+                  <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                  <p className="text-xs text-muted-foreground">Performance Management</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
@@ -142,6 +235,7 @@ export function Sidebar({
                       (item.title === "Dashboard" && activeTab === "home") || 
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
+                      (item.title === "Escalated" && activeTab === "escalated-tasks") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
@@ -154,6 +248,9 @@ export function Sidebar({
                         setMobileMenuOpen(false)
                       } else if (item.title === "Daily Tasks") {
                         setActiveTab("my-tasks")
+                        setMobileMenuOpen(false)
+                      } else if (item.title === "Escalated") {
+                        setActiveTab("escalated-tasks")
                         setMobileMenuOpen(false)
                       } else if (item.items) {
                         toggleExpanded(item.title)
@@ -278,12 +375,19 @@ export function Sidebar({
                       (item.title === "Dashboard" && activeTab === "home") || 
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
+                      (item.title === "Escalated" && activeTab === "escalated-tasks") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
                     onClick={() => {
                       if (item.title === "Dashboard") {
                         setActiveTab("home")
+                      } else if (item.title === "My KRA") {
+                        setActiveTab("my-kra")
+                      } else if (item.title === "Daily Tasks") {
+                        setActiveTab("my-tasks")
+                      } else if (item.title === "Escalated") {
+                        setActiveTab("escalated-tasks")
                       } else if (item.items) {
                         toggleExpanded(item.title)
                       }
