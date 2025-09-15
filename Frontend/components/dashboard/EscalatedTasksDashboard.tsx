@@ -60,6 +60,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
       
       if (escalatedToMeRes.ok) {
         const escalatedToMeData = await escalatedToMeRes.json();
+        console.log("Escalated to me data:", escalatedToMeData);
         setEscalatedTasks(Array.isArray(escalatedToMeData.tasks) ? escalatedToMeData.tasks : []);
       }
       
@@ -71,6 +72,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
       
       if (escalatedByMeRes.ok) {
         const escalatedByMeData = await escalatedByMeRes.json();
+        console.log("Escalated by me data:", escalatedByMeData);
         setEscalatedByMe(Array.isArray(escalatedByMeData.tasks) ? escalatedByMeData.tasks : []);
       }
     } catch (err) {

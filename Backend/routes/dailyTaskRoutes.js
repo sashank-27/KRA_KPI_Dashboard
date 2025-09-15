@@ -9,6 +9,8 @@ const {
   deleteDailyTask,
   updateDailyTaskStatus,
   getDailyTaskStats,
+  getUserKPIData,
+  getAllUsersKPIData,
   escalateTask,
   rollbackTask,
   getEscalatedTasks,
@@ -24,6 +26,13 @@ router.get("/", getAllDailyTasks);
 
 // GET /api/daily-tasks/stats - Get daily task statistics
 router.get("/stats", getDailyTaskStats);
+
+// KPI routes
+// GET /api/daily-tasks/kpi/user/:userId - Get KPI data for a specific user
+router.get("/kpi/user/:userId", getUserKPIData);
+
+// GET /api/daily-tasks/kpi/all - Get KPI data for all users
+router.get("/kpi/all", getAllUsersKPIData);
 
 // GET /api/daily-tasks/:id - Get daily task by ID
 router.get("/:id", getDailyTaskById);

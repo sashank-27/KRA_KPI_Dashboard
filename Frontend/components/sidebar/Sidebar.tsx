@@ -17,6 +17,7 @@ import {
   Wand2,
   X,
   ArrowUpRight,
+  BarChart3,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -53,6 +54,18 @@ const getSidebarItems = (isUserAdmin: boolean) => {
     baseItems.unshift({
       title: "Dashboard",
       icon: <Home />,
+      isActive: false,
+    });
+    
+    baseItems.push({
+      title: "Tasks Dashboard",
+      icon: <ClipboardList />,
+      isActive: false,
+    });
+    
+    baseItems.push({
+      title: "KPI Dashboard",
+      icon: <BarChart3 />,
       isActive: false,
     });
     
@@ -236,6 +249,8 @@ export function Sidebar({
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
                       (item.title === "Escalated" && activeTab === "escalated-tasks") ||
+                      (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
+                      (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
@@ -251,6 +266,12 @@ export function Sidebar({
                         setMobileMenuOpen(false)
                       } else if (item.title === "Escalated") {
                         setActiveTab("escalated-tasks")
+                        setMobileMenuOpen(false)
+                      } else if (item.title === "Tasks Dashboard") {
+                        setActiveTab("tasks-dashboard")
+                        setMobileMenuOpen(false)
+                      } else if (item.title === "KPI Dashboard") {
+                        setActiveTab("kpi-dashboard")
                         setMobileMenuOpen(false)
                       } else if (item.items) {
                         toggleExpanded(item.title)
@@ -376,6 +397,8 @@ export function Sidebar({
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
                       (item.title === "Escalated" && activeTab === "escalated-tasks") ||
+                      (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
+                      (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
@@ -388,6 +411,10 @@ export function Sidebar({
                         setActiveTab("my-tasks")
                       } else if (item.title === "Escalated") {
                         setActiveTab("escalated-tasks")
+                      } else if (item.title === "Tasks Dashboard") {
+                        setActiveTab("tasks-dashboard")
+                      } else if (item.title === "KPI Dashboard") {
+                        setActiveTab("kpi-dashboard")
                       } else if (item.items) {
                         toggleExpanded(item.title)
                       }

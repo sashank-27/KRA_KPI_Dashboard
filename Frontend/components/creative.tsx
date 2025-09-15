@@ -23,8 +23,10 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { MyKRADashboard } from "@/components/dashboard/MyKRADashboard";
 import { MyTasksDashboard } from "@/components/dashboard/MyTasksDashboard";
 import { EscalatedTasksDashboard } from "@/components/dashboard/EscalatedTasksDashboard";
+import { RealTimeTaskDashboard } from "@/components/dashboard/RealTimeTaskDashboard";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import KPIDashboard from "@/app/kpi/page";
 
 export function KRADashboard() {
   // Fetch all users and departments from backend on mount
@@ -438,7 +440,7 @@ export function KRADashboard() {
             className="w-full"
           >
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <TabsList className={`grid w-full max-w-[1200px] ${isLoadingCurrentUser ? 'grid-cols-6' : (isUserAdmin ? 'grid-cols-6' : 'grid-cols-4')} rounded-2xl p-1`}>
+              <TabsList className={`grid w-full max-w-[1200px] ${isLoadingCurrentUser ? 'grid-cols-7' : (isUserAdmin ? 'grid-cols-7' : 'grid-cols-4')} rounded-2xl p-1`}>
                 {(isLoadingCurrentUser || isUserAdmin) && (
                   <TabsTrigger
                     value="home"
@@ -465,6 +467,14 @@ export function KRADashboard() {
                 >
                   Escalated
                 </TabsTrigger>
+                {(isLoadingCurrentUser || isUserAdmin) && (
+                  <TabsTrigger
+                    value="tasks-dashboard"
+                    className="rounded-xl data-[state=active]:rounded-xl"
+                  >
+                    Tasks Dashboard
+                  </TabsTrigger>
+                )}
                 {(isLoadingCurrentUser || isUserAdmin) && (
                   <TabsTrigger
                     value="apps"
@@ -550,6 +560,21 @@ export function KRADashboard() {
                     </div>
                   )}
                 </TabsContent>
+
+                {isUserAdmin && (
+                  <TabsContent value="tasks-dashboard" className="space-y-8 mt-0">
+                    <RealTimeTaskDashboard 
+                      departments={departments}
+                      users={users}
+                    />
+                  </TabsContent>
+                )}
+
+                {isUserAdmin && (
+                  <TabsContent value="kpi-dashboard" className="space-y-8 mt-0">
+                    <KPIDashboard />
+                  </TabsContent>
+                )}
 
                 {isUserAdmin && (
                   <TabsContent value="apps" className="space-y-6 mt-0">

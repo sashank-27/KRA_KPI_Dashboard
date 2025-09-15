@@ -1,11 +1,12 @@
 const DailyTask = require("../models/DailyTask");
 const User = require("../models/User");
 const Department = require("../models/Department");
+const mongoose = require("mongoose");
 
 // Get all daily tasks
 const getAllDailyTasks = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, department, user, dateFrom, dateTo } = req.query;
+    const { page = 1, limit = 10, status, department, user, dateFrom, dateTo, search } = req.query;
     
     // Build query
     const query = {};
@@ -20,10 +21,46 @@ const getAllDailyTasks = async (req, res) => {
       if (dateTo) query.date.$lte = new Date(dateTo);
     }
     
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { task: { $regex: search, $options: 'i' } },
+        { remarks: { $regex: search, $options: 'i' } },
+        { srId: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
     const tasks = await DailyTask.find(query)
-      .populate("user", "name email")
-      .populate("department", "name")
-      .populate("createdBy", "name email")
+      .populate({
+        path: "user",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "department",
+        select: "name",
+        model: "Department"
+      })
+      .populate({
+        path: "createdBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedTo",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "originalUser",
+        select: "name email",
+        model: "User"
+      })
       .sort({ date: -1, createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -46,9 +83,36 @@ const getAllDailyTasks = async (req, res) => {
 const getDailyTaskById = async (req, res) => {
   try {
     const task = await DailyTask.findById(req.params.id)
-      .populate("user", "name email")
-      .populate("department", "name")
-      .populate("createdBy", "name email");
+      .populate({
+        path: "user",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "department",
+        select: "name",
+        model: "Department"
+      })
+      .populate({
+        path: "createdBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedTo",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "originalUser",
+        select: "name email",
+        model: "User"
+      });
 
     if (!task) {
       return res.status(404).json({ error: "Daily task not found" });
@@ -78,9 +142,36 @@ const getDailyTasksByUser = async (req, res) => {
     }
     
     const tasks = await DailyTask.find(query)
-      .populate("user", "name email")
-      .populate("department", "name")
-      .populate("createdBy", "name email")
+      .populate({
+        path: "user",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "department",
+        select: "name",
+        model: "Department"
+      })
+      .populate({
+        path: "createdBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedTo",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "originalUser",
+        select: "name email",
+        model: "User"
+      })
       .sort({ date: -1, createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -176,6 +267,13 @@ const createDailyTask = async (req, res) => {
       .populate("department", "name")
       .populate("createdBy", "name email");
 
+    // Emit real-time update to admin room
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('new-task', populatedTask);
+      io.to('admin-room').emit('task-stats-update');
+    }
+
     res.status(201).json(populatedTask);
   } catch (error) {
     console.error("Error creating daily task:", error);
@@ -207,6 +305,13 @@ const updateDailyTask = async (req, res) => {
       return res.status(404).json({ error: "Daily task not found" });
     }
 
+    // Emit real-time update to admin room
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('task-updated', updatedTask);
+      io.to('admin-room').emit('task-stats-update');
+    }
+
     res.json(updatedTask);
   } catch (error) {
     console.error("Error updating daily task:", error);
@@ -223,6 +328,13 @@ const deleteDailyTask = async (req, res) => {
 
     if (!deletedTask) {
       return res.status(404).json({ error: "Daily task not found" });
+    }
+
+    // Emit real-time update to admin room
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('task-deleted', { id });
+      io.to('admin-room').emit('task-stats-update');
     }
 
     res.json({ message: "Daily task deleted successfully" });
@@ -253,6 +365,13 @@ const updateDailyTaskStatus = async (req, res) => {
 
     if (!updatedTask) {
       return res.status(404).json({ error: "Daily task not found" });
+    }
+
+    // Emit real-time update to admin room
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('task-status-updated', updatedTask);
+      io.to('admin-room').emit('task-stats-update');
     }
 
     res.json(updatedTask);
@@ -290,7 +409,18 @@ const getDailyTaskStats = async (req, res) => {
       }
     ]);
 
-    const result = stats[0] || { total: 0, inProgress: 0, closed: 0 };
+    // Get escalated count
+    const escalatedCount = await DailyTask.countDocuments({
+      ...matchQuery,
+      isEscalated: true
+    });
+
+    const result = {
+      total: stats[0]?.total || 0,
+      inProgress: stats[0]?.inProgress || 0,
+      closed: stats[0]?.closed || 0,
+      escalated: escalatedCount || 0
+    };
     
     res.json(result);
   } catch (error) {
@@ -433,17 +563,44 @@ const getEscalatedTasks = async (req, res) => {
     }
     
     const tasks = await DailyTask.find(query)
-      .populate("user", "name email")
-      .populate("department", "name")
-      .populate("createdBy", "name email")
-      .populate("escalatedTo", "name email")
-      .populate("escalatedBy", "name email")
-      .populate("originalUser", "name email")
+      .populate({
+        path: "user",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "department",
+        select: "name",
+        model: "Department"
+      })
+      .populate({
+        path: "createdBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedTo",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "originalUser",
+        select: "name email",
+        model: "User"
+      })
       .sort({ escalatedAt: -1, date: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
     const total = await DailyTask.countDocuments(query);
+
+    // Debug logging
+    console.log("Escalated tasks data:", JSON.stringify(tasks, null, 2));
 
     res.json({
       tasks,
@@ -477,12 +634,36 @@ const getTasksEscalatedByUser = async (req, res) => {
     }
     
     const tasks = await DailyTask.find(query)
-      .populate("user", "name email")
-      .populate("department", "name")
-      .populate("createdBy", "name email")
-      .populate("escalatedTo", "name email")
-      .populate("escalatedBy", "name email")
-      .populate("originalUser", "name email")
+      .populate({
+        path: "user",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "department",
+        select: "name",
+        model: "Department"
+      })
+      .populate({
+        path: "createdBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedTo",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "escalatedBy",
+        select: "name email",
+        model: "User"
+      })
+      .populate({
+        path: "originalUser",
+        select: "name email",
+        model: "User"
+      })
       .sort({ escalatedAt: -1, date: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -501,6 +682,201 @@ const getTasksEscalatedByUser = async (req, res) => {
   }
 };
 
+// Get KPI data for a specific user
+const getUserKPIData = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { year, month, dateFrom, dateTo } = req.query;
+    
+    let matchQuery = { user: userId };
+    
+    // Handle date filtering
+    if (year && month) {
+      // Specific month and year
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+      matchQuery.date = { $gte: startDate, $lte: endDate };
+    } else if (year) {
+      // Entire year
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      matchQuery.date = { $gte: startDate, $lte: endDate };
+    } else if (dateFrom || dateTo) {
+      // Custom date range
+      matchQuery.date = {};
+      if (dateFrom) matchQuery.date.$gte = new Date(dateFrom);
+      if (dateTo) matchQuery.date.$lte = new Date(dateTo);
+    }
+    
+    const stats = await DailyTask.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          closed: { $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] } },
+          inProgress: { $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] } }
+        }
+      }
+    ]);
+
+    // Get escalated count separately
+    const escalatedCount = await DailyTask.countDocuments({
+      escalatedBy: new mongoose.Types.ObjectId(userId),
+      isEscalated: true,
+      ...matchQuery
+    });
+
+    const result = {
+      total: stats[0]?.total || 0,
+      closed: stats[0]?.closed || 0,
+      inProgress: stats[0]?.inProgress || 0,
+      escalated: escalatedCount || 0
+    };
+    
+    // Calculate Open and Pending according to your specification
+    // Open = Total - Closed (tasks that are not closed)
+    // Pending = In Progress (tasks that are in progress)
+    const open = result.total - result.closed;
+    const pending = result.inProgress;
+
+    const kpiData = {
+      total: result.total,
+      closed: result.closed,
+      open: open,
+      pending: pending,
+      escalated: result.escalated,
+      // KPI % (Closed/Total)
+      completionRate: result.total > 0 ? ((result.closed / result.total) * 100).toFixed(2) : 0,
+      // KPI % (Penalized) = ((Closed - Escalated) / Total) * 100
+      penalizedRate: result.total > 0 ? (((result.closed - result.escalated) / result.total) * 100).toFixed(2) : 0
+    };
+    
+    res.json(kpiData);
+  } catch (error) {
+    console.error("Error fetching user KPI data:", error);
+    res.status(500).json({ error: "Failed to fetch user KPI data" });
+  }
+};
+
+// Get KPI data for all users
+const getAllUsersKPIData = async (req, res) => {
+  try {
+    const { year, month, dateFrom, dateTo } = req.query;
+    
+    let matchQuery = {};
+    
+    // Handle date filtering
+    if (year && month) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+      matchQuery.date = { $gte: startDate, $lte: endDate };
+    } else if (year) {
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      matchQuery.date = { $gte: startDate, $lte: endDate };
+    } else if (dateFrom || dateTo) {
+      matchQuery.date = {};
+      if (dateFrom) matchQuery.date.$gte = new Date(dateFrom);
+      if (dateTo) matchQuery.date.$lte = new Date(dateTo);
+    }
+    
+    const stats = await DailyTask.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: "$user",
+          total: { $sum: 1 },
+          closed: { $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] } },
+          inProgress: { $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] } }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userInfo"
+        }
+      },
+      {
+        $unwind: "$userInfo"
+      },
+      {
+        $lookup: {
+          from: "departments",
+          localField: "userInfo.department",
+          foreignField: "_id",
+          as: "departmentInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$departmentInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: "dailytasks",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$escalatedBy", "$$userId"] },
+                    { $eq: ["$isEscalated", true] }
+                  ]
+                }
+              }
+            },
+            {
+              $count: "escalated"
+            }
+          ],
+          as: "escalatedTasks"
+        }
+      },
+      {
+        $project: {
+          userId: "$_id",
+          userName: "$userInfo.name",
+          userEmail: "$userInfo.email",
+          department: { $ifNull: ["$departmentInfo.name", "No Department"] },
+          total: 1,
+          closed: 1,
+          open: { $subtract: ["$total", "$closed"] }, // Open = Total - Closed
+          pending: "$inProgress", // Pending = In Progress
+          escalated: { $ifNull: [{ $arrayElemAt: ["$escalatedTasks.escalated", 0] }, 0] },
+          completionRate: {
+            $cond: [
+              { $gt: ["$total", 0] },
+              { $multiply: [{ $divide: ["$closed", "$total"] }, 100] },
+              0
+            ]
+          },
+          penalizedRate: {
+            $cond: [
+              { $gt: ["$total", 0] },
+              { $multiply: [{ $divide: [{ $subtract: ["$closed", { $ifNull: [{ $arrayElemAt: ["$escalatedTasks.escalated", 0] }, 0] }] }, "$total"] }, 100] },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $sort: { completionRate: -1 }
+      }
+    ]);
+    
+    res.json(stats);
+  } catch (error) {
+    console.error("Error fetching all users KPI data:", error);
+    res.status(500).json({ error: "Failed to fetch all users KPI data" });
+  }
+};
+
 module.exports = {
   getAllDailyTasks,
   getDailyTaskById,
@@ -510,6 +886,8 @@ module.exports = {
   deleteDailyTask,
   updateDailyTaskStatus,
   getDailyTaskStats,
+  getUserKPIData,
+  getAllUsersKPIData,
   escalateTask,
   rollbackTask,
   getEscalatedTasks,
