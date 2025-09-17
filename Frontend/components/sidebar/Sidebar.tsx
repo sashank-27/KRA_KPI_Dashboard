@@ -18,6 +18,10 @@ import {
   X,
   ArrowUpRight,
   BarChart3,
+  LayoutGrid,
+  UserCog,
+  Building2,
+  FileText,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -30,8 +34,21 @@ import { User } from "@/lib/types"
 import { isAdmin } from "@/lib/auth"
 
 // Sample data for sidebar navigation
-const getSidebarItems = (isUserAdmin: boolean) => {
-  const baseItems = [
+type SidebarSubItem = {
+  title: string;
+  url: string;
+  icon?: React.ReactNode;
+};
+
+type SidebarItem = {
+  title: string;
+  icon: React.ReactNode;
+  isActive: boolean;
+  items?: SidebarSubItem[];
+};
+
+const getSidebarItems = (isUserAdmin: boolean): SidebarItem[] => {
+  const baseItems: SidebarItem[] = [
     {
       title: "My KRA",
       icon: <Target />,
@@ -73,11 +90,12 @@ const getSidebarItems = (isUserAdmin: boolean) => {
       title: "Management",
       icon: <Layers />,
       items: [
-        { title: "All Management", url: "#" },
-        { title: "User Management", url: "#" },
-        { title: "Department Management", url: "#"},
-        { title: "KRA Management", url: "#"},
+        { title: "All Management", url: "#", icon: <LayoutGrid className="mr-2 h-4 w-4" /> },
+        { title: "User Management", url: "#", icon: <UserCog className="mr-2 h-4 w-4" /> },
+        { title: "Department Management", url: "#", icon: <Building2 className="mr-2 h-4 w-4" /> },
+        { title: "KRA Management", url: "#", icon: <FileText className="mr-2 h-4 w-4" /> },
       ],
+      isActive: false,
     });
   }
 
@@ -295,7 +313,7 @@ export function Sidebar({
 
                   {item.items && expandedItems[item.title] && (
                     <div className="mt-1 ml-6 space-y-1 border-l pl-3">
-                      {item.items.map((subItem) => (
+                      {item.items && item.items.map((subItem: SidebarSubItem) => (
                         <button
                           key={subItem.title}
                           onClick={() => {
@@ -311,9 +329,10 @@ export function Sidebar({
                               }
                             }
                           }}
-                          className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted text-left"
+                          className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm hover:bg-muted text-left"
                         >
-                          {subItem.title}
+                          {subItem.icon && <span>{subItem.icon}</span>}
+                          <span>{subItem.title}</span>
                         </button>
                       ))}
                     </div>
@@ -437,7 +456,7 @@ export function Sidebar({
 
                   {item.items && expandedItems[item.title] && (
                     <div className="mt-1 ml-6 space-y-1 border-l pl-3">
-                      {item.items.map((subItem) => (
+                      {item.items && item.items.map((subItem: SidebarSubItem) => (
                         <button
                           key={subItem.title}
                           onClick={() => {
@@ -453,9 +472,10 @@ export function Sidebar({
                               }
                             }
                           }}
-                          className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted text-left"
+                          className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm hover:bg-muted text-left"
                         >
-                          {subItem.title}
+                          {subItem.icon && <span>{subItem.icon}</span>}
+                          <span>{subItem.title}</span>
                         </button>
                       ))}
                     </div>
