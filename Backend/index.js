@@ -17,13 +17,23 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"],
-    credentials: true
-  }
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ 
+  origin: ["http://localhost:3000", "http://127.0.0.1:3000"], 
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 app.use("/api", userRoutes);
@@ -75,24 +85,47 @@ async function seedAdmin() {
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log('✅ User connected:', socket.id);
+  console.log('📊 Total connections:', io.engine.clientsCount);
   
   // Join admin room for real-time updates
   socket.on('join-admin-room', () => {
     socket.join('admin-room');
-    console.log('User joined admin room:', socket.id);
+    console.log('✅ User joined admin room:', socket.id);
+    // Send confirmation
+    socket.emit('admin-room-joined', { message: 'Successfully joined admin room' });
+  });
+
+  // Join user-specific room for escalated tasks
+  socket.on('join-user-room', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log('✅ User joined user room:', socket.id, 'for user:', userId);
   });
   
   // Leave admin room
   socket.on('leave-admin-room', () => {
     socket.leave('admin-room');
-    console.log('User left admin room:', socket.id);
+    console.log('❌ User left admin room:', socket.id);
   });
+
   
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+  socket.on('disconnect', (reason) => {
+    console.log('❌ User disconnected:', socket.id, 'Reason:', reason);
+    console.log('📊 Remaining connections:', io.engine.clientsCount);
+  });
+
+  socket.on('error', (error) => {
+    console.error('💥 Socket error:', error);
   });
 });
+
+// Log when Socket.IO is ready
+io.on('connect', () => {
+  console.log('🚀 Socket.IO server is ready');
+});
+
+// Log server startup
+console.log('🔧 Socket.IO server configured with CORS for:', ["http://localhost:3000", "http://127.0.0.1:3000"]);
 
 // Make io available to routes
 app.set('io', io);
@@ -108,3 +141,4 @@ connectDB().then(async () => {
 }).catch((error) => {
   console.error("Failed to start server:", error);
 });
+

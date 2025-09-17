@@ -17,14 +17,17 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Users,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTask, NewDailyTask, Department, User as UserType } from "@/lib/types";
 import { DailyTaskModal } from "@/components/modals/DailyTaskModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   Select,
   SelectContent,
@@ -74,6 +77,38 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   const [escalationReason, setEscalationReason] = useState("");
   const [escalatedTo, setEscalatedTo] = useState("");
 
+  // Socket.IO for real-time updates
+  const { socket, isConnected } = useSocket();
+
+  // Debug socket connection
+  useEffect(() => {
+    console.log('Socket connection status changed:', { socket: !!socket, isConnected });
+    if (socket) {
+      console.log('Socket ID:', socket.id);
+      
+      // Join user-specific room for escalated tasks
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser._id) {
+        socket.emit("join-user-room", currentUser._id);
+        console.log("Joined user room for:", currentUser._id);
+      }
+
+      // Handle escalated tasks
+      socket.on("task-assigned", (data) => {
+        console.log("Task assigned to you:", data);
+        if (data.type === 'task-escalated') {
+          alert(`New task assigned to you: ${data.message}`);
+          // Refresh the task list to show the new escalated task
+          fetchUserTasks();
+        }
+      });
+      
+      return () => {
+        socket.off("task-assigned");
+      };
+    }
+  }, [socket, isConnected]);
+
   // Fetch user's daily tasks
   useEffect(() => {
     fetchUserTasks();
@@ -114,6 +149,49 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
     }
   };
 
+  // Simplified real-time event handler
+  const handleRealtimeEvent = useCallback((data: any) => {
+    console.log('Real-time event received:', data);
+    
+    // Check if the event affects current user
+    const isRelevant = data.data && (
+      data.data.user && data.data.user._id === currentUserId ||
+      data.data.originalUser && data.data.originalUser._id === currentUserId ||
+      data.data.escalatedBy && data.data.escalatedBy._id === currentUserId
+    );
+    
+    if (isRelevant) {
+      console.log('Event is relevant to current user, refreshing tasks...');
+      fetchUserTasks();
+    } else {
+      console.log('Event is not relevant to current user, ignoring...');
+    }
+  }, [currentUserId]);
+
+  // Set up real-time event listeners with simplified approach
+  useEffect(() => {
+    if (!socket) return;
+
+    console.log('Setting up real-time event listeners...');
+    
+    socket.on('task-created', handleRealtimeEvent);
+    socket.on('task-updated', handleRealtimeEvent);
+    socket.on('task-deleted', handleRealtimeEvent);
+    socket.on('task-escalated', handleRealtimeEvent);
+    socket.on('task-rollback', handleRealtimeEvent);
+    socket.on('task-status-updated', handleRealtimeEvent);
+
+    return () => {
+      console.log('Cleaning up real-time event listeners...');
+      socket.off('task-created', handleRealtimeEvent);
+      socket.off('task-updated', handleRealtimeEvent);
+      socket.off('task-deleted', handleRealtimeEvent);
+      socket.off('task-escalated', handleRealtimeEvent);
+      socket.off('task-rollback', handleRealtimeEvent);
+      socket.off('task-status-updated', handleRealtimeEvent);
+    };
+  }, [socket, handleRealtimeEvent]);
+
   // Create task
   const handleCreateTask = async () => {
     if (newTask.task && newTask.remarks) {
@@ -152,6 +230,52 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
         alert(`Failed to create daily task: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
+  };
+
+  // Update task status
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskId}/status`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        credentials: "include",
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.log('Unauthorized access, redirecting to login');
+          requireAuth();
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update task status: ${res.status} ${res.statusText}`);
+      }
+      
+      const updated = await res.json();
+      setTasks(tasks.map((task) => (task._id === updated._id ? updated : task)));
+      fetchUserTasks(); // Refresh the task list
+    } catch (err) {
+      console.error("Failed to update task status", err);
+      alert(`Failed to update task status: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  // Get escalation details for tooltip
+  const getEscalationDetails = (task: DailyTask) => {
+    if (!task.isEscalated) return null;
+    
+    const escalatedBy = typeof task.escalatedBy === 'string' ? task.escalatedBy : task.escalatedBy?.name || 'Unknown';
+    const escalatedTo = typeof task.escalatedTo === 'string' ? task.escalatedTo : task.escalatedTo?.name || 'Unknown';
+    const escalatedAt = task.escalatedAt ? new Date(task.escalatedAt).toLocaleDateString() : 'Unknown date';
+    const reason = task.escalationReason || 'No reason provided';
+    
+    return {
+      escalatedBy,
+      escalatedTo,
+      escalatedAt,
+      reason
+    };
   };
 
   // Escalate task
@@ -290,10 +414,18 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
               Track and manage your daily tasks and service requests.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-8 w-8 text-white/80" />
-            <span className="text-2xl font-bold">{stats.total}</span>
-            <span className="text-white/80">Total Tasks</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-8 w-8 text-white/80" />
+              <span className="text-2xl font-bold">{stats.total}</span>
+              <span className="text-white/80">Total Tasks</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span className="text-sm text-white/60">
+                {isConnected ? 'Real-time Connected' : 'Disconnected'}
+              </span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -397,7 +529,8 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
       {/* Task List */}
       <div className="space-y-4">
         {filteredTasks.length > 0 ? (
-          filteredTasks.map((task, index) => (
+          <TooltipProvider>
+            {filteredTasks.map((task, index) => (
             <motion.div
               key={task._id}
               initial={{ opacity: 0, y: 20 }}
@@ -495,7 +628,32 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-2">
+                      {/* Status Change Button - Always visible */}
+                      {task.status === 'closed' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUpdateTaskStatus(task._id, 'in-progress')}
+                          className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Reopen
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUpdateTaskStatus(task._id, 'closed')}
+                          className="text-green-600 border-green-200 hover:bg-green-50"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Complete
+                        </Button>
+                      )}
+                      
                       {!task.isEscalated && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
                         <Button
                           variant="outline"
                           size="sm"
@@ -505,6 +663,12 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                           <ArrowUpRight className="h-4 w-4 mr-1" />
                           Escalate
                         </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium">Escalate Task</p>
+                            <p className="text-xs text-gray-500">Click to escalate this task to another user</p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                       {task.isEscalated && (() => {
                         // Use originalUser if available, otherwise fallback to escalatedBy
@@ -525,9 +689,32 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                                 Rollback
                               </Button>
                             )}
-                            <Badge variant="outline" className="text-orange-600 border-orange-200">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-orange-600 border-orange-200 cursor-help">
                               Escalated
                             </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <div className="space-y-1">
+                                  <p className="font-medium text-orange-600">Task Escalated</p>
+                                  {(() => {
+                                    const details = getEscalationDetails(task);
+                                    if (!details) return <p className="text-xs">No escalation details available</p>;
+                                    return (
+                                      <>
+                                        <p className="text-xs"><span className="font-medium">From:</span> {details.escalatedBy}</p>
+                                        <p className="text-xs"><span className="font-medium">To:</span> {details.escalatedTo}</p>
+                                        <p className="text-xs"><span className="font-medium">Date:</span> {details.escalatedAt}</p>
+                                        {details.reason && (
+                                          <p className="text-xs"><span className="font-medium">Reason:</span> {details.reason}</p>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         );
                       })()}
@@ -536,7 +723,8 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                 </div>
               </div>
             </motion.div>
-          ))
+            ))}
+          </TooltipProvider>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -46,8 +46,8 @@ router.post("/", createDailyTask);
 // PUT /api/daily-tasks/:id - Update daily task
 router.put("/:id", updateDailyTask);
 
-// PATCH /api/daily-tasks/:id/status - Update daily task status
-router.patch("/:id/status", updateDailyTaskStatus);
+// PUT /api/daily-tasks/:id/status - Update daily task status
+router.put("/:id/status", updateDailyTaskStatus);
 
 // DELETE /api/daily-tasks/:id - Delete daily task
 router.delete("/:id", deleteDailyTask);

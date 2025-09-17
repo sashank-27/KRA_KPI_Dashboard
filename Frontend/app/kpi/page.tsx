@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   BarChart3,
   Download,
@@ -77,6 +78,9 @@ export default function KPIDashboard() {
   const [userKpiData, setUserKpiData] = useState<UserKPIData | null>(null);
   const [filterType, setFilterType] = useState<"year" | "month" | "custom">("year");
 
+  // Socket.IO for real-time updates
+  const { socket, isConnected } = useSocket();
+
   // Fetch users and departments
   useEffect(() => {
     fetchUsers();
@@ -94,13 +98,17 @@ export default function KPIDashboard() {
 
   const fetchUsers = async () => {
     try {
+      console.log("Fetching users...");
       const res = await fetch("http://localhost:5000/api/users", {
         headers: getAuthHeaders(),
         credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
-        setUsers(data.users || []);
+        console.log("Users data received:", data);
+        setUsers(Array.isArray(data) ? data : []);
+      } else {
+        console.error("Failed to fetch users, status:", res.status);
       }
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -109,13 +117,17 @@ export default function KPIDashboard() {
 
   const fetchDepartments = async () => {
     try {
+      console.log("Fetching departments...");
       const res = await fetch("http://localhost:5000/api/departments", {
         headers: getAuthHeaders(),
         credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
-        setDepartments(data.departments || []);
+        console.log("Departments data received:", data);
+        setDepartments(Array.isArray(data) ? data : []);
+      } else {
+        console.error("Failed to fetch departments, status:", res.status);
       }
     } catch (err) {
       console.error("Failed to fetch departments", err);
@@ -185,6 +197,81 @@ export default function KPIDashboard() {
       setIsLoading(false);
     }
   };
+
+  // Real-time event handlers
+  const handleTaskUpdate = useCallback((data: any) => {
+    console.log('Real-time task update received in KPI:', data);
+    
+    // Refresh KPI data when any task is updated
+    if (selectedUser === "all") {
+      fetchAllUsersKPIData();
+    } else {
+      fetchUserKPIData();
+    }
+  }, [selectedUser, selectedYear, selectedMonth, dateFrom, dateTo, filterType]);
+
+  const handleTaskCreated = useCallback((data: any) => {
+    console.log('Real-time task created in KPI:', data);
+    
+    // Refresh KPI data when a new task is created
+    if (selectedUser === "all") {
+      fetchAllUsersKPIData();
+    } else {
+      fetchUserKPIData();
+    }
+  }, [selectedUser, selectedYear, selectedMonth, dateFrom, dateTo, filterType]);
+
+  const handleTaskDeleted = useCallback((data: any) => {
+    console.log('Real-time task deleted in KPI:', data);
+    
+    // Refresh KPI data when a task is deleted
+    if (selectedUser === "all") {
+      fetchAllUsersKPIData();
+    } else {
+      fetchUserKPIData();
+    }
+  }, [selectedUser, selectedYear, selectedMonth, dateFrom, dateTo, filterType]);
+
+  const handleTaskEscalated = useCallback((data: any) => {
+    console.log('Real-time task escalated in KPI:', data);
+    
+    // Refresh KPI data when a task is escalated
+    if (selectedUser === "all") {
+      fetchAllUsersKPIData();
+    } else {
+      fetchUserKPIData();
+    }
+  }, [selectedUser, selectedYear, selectedMonth, dateFrom, dateTo, filterType]);
+
+  const handleTaskRollback = useCallback((data: any) => {
+    console.log('Real-time task rollback in KPI:', data);
+    
+    // Refresh KPI data when a task is rolled back
+    if (selectedUser === "all") {
+      fetchAllUsersKPIData();
+    } else {
+      fetchUserKPIData();
+    }
+  }, [selectedUser, selectedYear, selectedMonth, dateFrom, dateTo, filterType]);
+
+  const handleTaskStatusUpdated = useCallback((data: any) => {
+    console.log('Real-time task status updated in KPI:', data);
+    
+    // Refresh KPI data when task status is updated
+    if (selectedUser === "all") {
+      fetchAllUsersKPIData();
+    } else {
+      fetchUserKPIData();
+    }
+  }, [selectedUser, selectedYear, selectedMonth, dateFrom, dateTo, filterType]);
+
+  // Set up real-time event listeners
+  useSocketEvent(socket, 'task-update', handleTaskUpdate);
+  useSocketEvent(socket, 'task-created', handleTaskCreated);
+  useSocketEvent(socket, 'task-deleted', handleTaskDeleted);
+  useSocketEvent(socket, 'task-escalated', handleTaskEscalated);
+  useSocketEvent(socket, 'task-rollback', handleTaskRollback);
+  useSocketEvent(socket, 'task-status-updated', handleTaskStatusUpdated);
 
   const exportToCSV = () => {
     const dataToExport = selectedUser === "all" ? kpiData : [userKpiData];
@@ -256,12 +343,20 @@ export default function KPIDashboard() {
               Track and analyze Key Performance Indicators for task completion efficiency.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-8 w-8 text-white/80" />
-            <span className="text-2xl font-bold">
-              {selectedUser === "all" ? kpiData.length : 1}
-            </span>
-            <span className="text-white/80">Users</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-8 w-8 text-white/80" />
+              <span className="text-2xl font-bold">
+                {selectedUser === "all" ? kpiData.length : 1}
+              </span>
+              <span className="text-white/80">Users</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span className="text-sm text-white/60">
+                {isConnected ? 'Real-time Connected' : 'Disconnected'}
+              </span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -284,11 +379,17 @@ export default function KPIDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Users</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user._id} value={user._id}>
-                      {user.name} ({user.email})
+                  {users.length > 0 ? (
+                    users.map((user) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {user.name} ({user.email})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-users" disabled>
+                      No users available
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>

@@ -32,9 +32,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTask, NewDailyTask, Department, User as UserType } from "@/lib/types";
 import { DailyTaskModal } from "@/components/modals/DailyTaskModal";
-import { getAuthHeaders, requireAuth } from "@/lib/auth";
+import { getAuthHeaders, requireAuth, isAuthenticated } from "@/lib/auth";
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import {
@@ -107,30 +108,84 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
   const [hasMoreData, setHasMoreData] = useState(true);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [escalateTaskOpen, setEscalateTaskOpen] = useState(false);
+  const [taskToEscalate, setTaskToEscalate] = useState<DailyTask | null>(null);
+  const [escalateToUser, setEscalateToUser] = useState<string>("");
+  const [escalationReason, setEscalationReason] = useState<string>("");
 
   // Initialize socket connection
   useEffect(() => {
     if (realtimeEnabled) {
+      console.log("Initializing WebSocket connection...");
+      
       const socket = io("http://localhost:5000", {
         withCredentials: true,
+        transports: ['websocket', 'polling'],
+        timeout: 20000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        maxReconnectionAttempts: 5,
+        autoConnect: true,
+        upgrade: true,
+        rememberUpgrade: false
       });
 
       socketRef.current = socket;
 
       socket.on("connect", () => {
-        console.log("Connected to server");
+        console.log("Socket connected:", socket.id);
+        setIsConnected(true);
+        socket.emit("join-admin-room");
+        console.log("Joined admin room");
+        
+        // Join user-specific room for escalated tasks
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (currentUser._id) {
+          socket.emit("join-user-room", currentUser._id);
+          console.log("Joined user room for:", currentUser._id);
+        }
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason);
+        setIsConnected(false);
+      });
+
+      socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        setIsConnected(false);
+        // Try to reconnect after a delay
+        setTimeout(() => {
+          if (socket.disconnected) {
+            console.log("Attempting to reconnect...");
+            socket.connect();
+          }
+        }, 2000);
+      });
+
+      socket.on("reconnect", (attemptNumber) => {
+        console.log("Socket reconnected after", attemptNumber, "attempts");
         setIsConnected(true);
         socket.emit("join-admin-room");
       });
 
-      socket.on("disconnect", () => {
-        console.log("Disconnected from server");
-        setIsConnected(false);
+      socket.on("admin-room-joined", (data) => {
+        console.log("Admin room confirmation:", data);
       });
 
       socket.on("new-task", (task: DailyTask) => {
         console.log("New task received:", task);
-        setTasks(prev => [task, ...prev]);
+        setTasks(prev => {
+          // Check if task already exists to prevent duplicates
+          const exists = prev.some(t => t._id === task._id);
+          if (exists) {
+            console.log("Task already exists, skipping duplicate:", task._id);
+            return prev;
+          }
+          return [task, ...prev];
+        });
         setRecentActivity(prev => [{
           type: "new",
           task,
@@ -142,7 +197,16 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
 
       socket.on("task-updated", (task: DailyTask) => {
         console.log("Task updated:", task);
-        setTasks(prev => prev.map(t => t._id === task._id ? task : t));
+        setTasks(prev => {
+          const taskExists = prev.some(t => t._id === task._id);
+          if (taskExists) {
+            // Update existing task
+            return prev.map(t => t._id === task._id ? task : t);
+          } else {
+            // Add new task if it doesn't exist
+            return [task, ...prev];
+          }
+        });
         setRecentActivity(prev => [{
           type: "update",
           task,
@@ -166,7 +230,16 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
 
       socket.on("task-status-updated", (task: DailyTask) => {
         console.log("Task status updated:", task);
-        setTasks(prev => prev.map(t => t._id === task._id ? task : t));
+        setTasks(prev => {
+          const taskExists = prev.some(t => t._id === task._id);
+          if (taskExists) {
+            // Update existing task
+            return prev.map(t => t._id === task._id ? task : t);
+          } else {
+            // Add new task if it doesn't exist
+            return [task, ...prev];
+          }
+        });
         setRecentActivity(prev => [{
           type: "status",
           task,
@@ -177,13 +250,35 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
       });
 
       socket.on("task-stats-update", () => {
+        console.log("Stats update received");
         fetchStats();
       });
 
+      socket.on("task-assigned", (data) => {
+        console.log("Task assigned to you:", data);
+        // Show notification for escalated tasks
+        if (data.type === 'task-escalated') {
+          alert(`New task assigned to you: ${data.message}`);
+          // Refresh the task list to show the new escalated task
+          fetchTasks(1, itemsPerPage, true);
+        }
+      });
+
+
       return () => {
+        console.log("Cleaning up socket connection");
+        socket.emit("leave-admin-room");
         socket.disconnect();
         socketRef.current = null;
       };
+    } else {
+      // Clean up socket if realtime is disabled
+      if (socketRef.current) {
+        socketRef.current.emit("leave-admin-room");
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsConnected(false);
     }
   }, [realtimeEnabled]);
 
@@ -208,12 +303,37 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
     fetchStats();
   }, []);
 
+  // Clean up any duplicate tasks on mount
+  useEffect(() => {
+    setTasks(prev => {
+      const seen = new Set();
+      return prev.filter(task => {
+        if (seen.has(task._id)) {
+          return false;
+        }
+        seen.add(task._id);
+        return true;
+      });
+    });
+  }, []);
+
   const fetchTasks = async (page = 1, limit = itemsPerPage, reset = false) => {
     try {
       if (reset) {
         setIsInitialLoading(true);
       } else {
         setIsLoadingMore(true);
+      }
+      
+      // Check authentication status
+      const authHeaders = getAuthHeaders();
+      console.log('Auth headers:', authHeaders);
+      console.log('Is authenticated:', isAuthenticated());
+      
+      if (!isAuthenticated()) {
+        console.log('User not authenticated, redirecting to login');
+        requireAuth();
+        return;
       }
       
       // Build query parameters
@@ -254,17 +374,41 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
       const data = await res.json();
       const tasksData = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
       
+      // Deduplicate tasks by _id
+      const deduplicateTasks = (tasks: DailyTask[]) => {
+        const seen = new Set();
+        return tasks.filter(task => {
+          if (seen.has(task._id)) {
+            return false;
+          }
+          seen.add(task._id);
+          return true;
+        });
+      };
+      
       if (reset) {
-        setTasks(tasksData);
+        setTasks(deduplicateTasks(tasksData));
         setCurrentPage(1);
       } else {
-        setTasks(prev => [...prev, ...tasksData]);
+        setTasks(prev => deduplicateTasks([...prev, ...tasksData]));
       }
       
       // Check if there's more data
       setHasMoreData(tasksData.length === limit);
     } catch (err) {
       console.error("Failed to fetch daily tasks", err);
+      console.error("Error details:", {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
+      
+      // Check if it's a network error
+      if (err.message === 'Failed to fetch') {
+        console.error("Network error: Backend server might not be running on http://localhost:5000");
+        alert("Unable to connect to server. Please ensure the backend server is running on http://localhost:5000");
+      }
+      
       setTasks([]);
     } finally {
       setIsLoadingMore(false);
@@ -301,6 +445,17 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
 
   const fetchStats = async () => {
     try {
+      // Check authentication status
+      const authHeaders = getAuthHeaders();
+      console.log('Stats - Auth headers:', authHeaders);
+      console.log('Stats - Is authenticated:', isAuthenticated());
+      
+      if (!isAuthenticated()) {
+        console.log('User not authenticated for stats, redirecting to login');
+        requireAuth();
+        return;
+      }
+      
       const res = await fetch("http://localhost:5000/api/daily-tasks/stats", {
         headers: getAuthHeaders(),
         credentials: "include",
@@ -312,6 +467,16 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
       }
     } catch (err) {
       console.error("Failed to fetch daily task stats", err);
+      console.error("Error details:", {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
+      
+      // Check if it's a network error
+      if (err.message === 'Failed to fetch') {
+        console.error("Network error: Backend server might not be running on http://localhost:5000");
+      }
     }
   };
 
@@ -388,6 +553,67 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
     } catch (err) {
       console.error("Failed to update daily task", err);
       alert(`Failed to update daily task: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+
+  // Get escalation details for tooltip
+  const getEscalationDetails = (task: DailyTask) => {
+    if (!task.isEscalated) return null;
+    
+    const escalatedBy = typeof task.escalatedBy === 'string' ? task.escalatedBy : task.escalatedBy?.name || 'Unknown';
+    const escalatedTo = typeof task.escalatedTo === 'string' ? task.escalatedTo : task.escalatedTo?.name || 'Unknown';
+    const escalatedAt = task.escalatedAt ? new Date(task.escalatedAt).toLocaleDateString() : 'Unknown date';
+    const reason = task.escalationReason || 'No reason provided';
+    
+    return {
+      escalatedBy,
+      escalatedTo,
+      escalatedAt,
+      reason
+    };
+  };
+
+  // Escalate task
+  const handleEscalateTask = (task: DailyTask) => {
+    setTaskToEscalate(task);
+    setEscalateTaskOpen(true);
+  };
+
+  const confirmEscalateTask = async () => {
+    if (taskToEscalate && escalateToUser) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskToEscalate._id}/escalate`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          credentials: "include",
+          body: JSON.stringify({
+            escalatedTo: escalateToUser,
+            escalationReason: escalationReason
+          }),
+        });
+        
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.log('Unauthorized access, redirecting to login');
+            requireAuth();
+            return;
+          }
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to escalate task: ${res.status} ${res.statusText}`);
+        }
+        
+        const updated = await res.json();
+        setTasks(tasks.map((task) => (task._id === updated._id ? updated : task)));
+        setEscalateTaskOpen(false);
+        setTaskToEscalate(null);
+        setEscalateToUser("");
+        setEscalationReason("");
+        fetchStats();
+      } catch (err) {
+        console.error("Failed to escalate task", err);
+        alert(`Failed to escalate task: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
     }
   };
 
@@ -739,7 +965,8 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
             </div>
             
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <TooltipProvider>
+                <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
@@ -820,7 +1047,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                     <AnimatePresence>
                       {Array.isArray(filteredTasks) && filteredTasks.length > 0 ? filteredTasks.map((task, idx) => (
                       <motion.tr
-                        key={task._id}
+                        key={`${task._id}-${idx}-${task.updatedAt || task.createdAt || Date.now()}`}
                         initial={{ opacity: 0, y: 20, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 0.98 }}
@@ -920,6 +1147,57 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                         {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center space-x-2">
+                            {/* Escalate Button - only show for in-progress tasks that are not already escalated */}
+                            {task.status === 'in-progress' && !task.isEscalated && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEscalateTask(task)}
+                                    className="h-8 px-3 hover:bg-orange-100 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md text-orange-700 border-orange-300"
+                                  >
+                                    <ArrowUpDown className="h-4 w-4 mr-1" />
+                                    Escalate
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Escalate Task</p>
+                                  <p className="text-xs text-gray-500">Click to escalate this task to another user</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            
+                            {/* Escalated Task Info - show escalation details */}
+                            {task.isEscalated && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center space-x-1 text-orange-600">
+                                    <ArrowUpDown className="h-4 w-4" />
+                                    <span className="text-sm font-medium">Escalated</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <div className="space-y-1">
+                                    <p className="font-medium text-orange-600">Task Escalated</p>
+                                    {(() => {
+                                      const details = getEscalationDetails(task);
+                                      if (!details) return <p className="text-xs">No escalation details available</p>;
+                                      return (
+                                        <>
+                                          <p className="text-xs"><span className="font-medium">From:</span> {details.escalatedBy}</p>
+                                          <p className="text-xs"><span className="font-medium">To:</span> {details.escalatedTo}</p>
+                                          <p className="text-xs"><span className="font-medium">Date:</span> {details.escalatedAt}</p>
+                                          {details.reason && (
+                                            <p className="text-xs"><span className="font-medium">Reason:</span> {details.reason}</p>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -952,6 +1230,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                   )}
                 </tbody>
               </table>
+              </TooltipProvider>
             </div>
             
             {/* Pagination Info and Load More Button */}
@@ -1112,6 +1391,61 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Escalate Task Modal */}
+      <AlertDialog open={escalateTaskOpen} onOpenChange={setEscalateTaskOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Escalate Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Escalate this task to another user. The task will be transferred to the selected user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="escalate-user">Escalate to User</Label>
+              <Select value={escalateToUser} onValueChange={setEscalateToUser}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="escalation-reason">Reason for Escalation (Optional)</Label>
+              <Input
+                id="escalation-reason"
+                value={escalationReason}
+                onChange={(e) => setEscalationReason(e.target.value)}
+                placeholder="Enter reason for escalation..."
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setEscalateTaskOpen(false);
+              setTaskToEscalate(null);
+              setEscalateToUser("");
+              setEscalationReason("");
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmEscalateTask}
+              disabled={!escalateToUser}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Escalate Task
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

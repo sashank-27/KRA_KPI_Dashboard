@@ -20,7 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DailyTask, Department, User as UserType } from "@/lib/types";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   Select,
   SelectContent,
@@ -42,6 +43,9 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState<"escalated-to-me" | "escalated-by-me">("escalated-to-me");
+
+  // Socket.IO for real-time updates
+  const { socket, isConnected } = useSocket();
 
   // Fetch escalated tasks
   useEffect(() => {
@@ -83,6 +87,58 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
       setIsLoading(false);
     }
   };
+
+  // Real-time event handlers
+  const handleTaskUpdate = useCallback((data: any) => {
+    console.log('Real-time task update received in EscalatedTasks:', data);
+    
+    // Refresh escalated tasks when any task is updated
+    fetchEscalatedTasks();
+  }, []);
+
+  const handleTaskCreated = useCallback((data: any) => {
+    console.log('Real-time task created in EscalatedTasks:', data);
+    
+    // Refresh escalated tasks when a new task is created (in case it's escalated)
+    fetchEscalatedTasks();
+  }, []);
+
+  const handleTaskDeleted = useCallback((data: any) => {
+    console.log('Real-time task deleted in EscalatedTasks:', data);
+    
+    // Remove the deleted task from local state
+    setEscalatedTasks(prevTasks => prevTasks.filter(task => task._id !== data.data.id));
+    setEscalatedByMe(prevTasks => prevTasks.filter(task => task._id !== data.data.id));
+  }, []);
+
+  const handleTaskEscalated = useCallback((data: any) => {
+    console.log('Real-time task escalated in EscalatedTasks:', data);
+    
+    // Refresh escalated tasks when a task is escalated
+    fetchEscalatedTasks();
+  }, []);
+
+  const handleTaskRollback = useCallback((data: any) => {
+    console.log('Real-time task rollback in EscalatedTasks:', data);
+    
+    // Refresh escalated tasks when a task is rolled back
+    fetchEscalatedTasks();
+  }, []);
+
+  const handleTaskStatusUpdated = useCallback((data: any) => {
+    console.log('Real-time task status updated in EscalatedTasks:', data);
+    
+    // Refresh escalated tasks when status is updated
+    fetchEscalatedTasks();
+  }, []);
+
+  // Set up real-time event listeners
+  useSocketEvent(socket, 'task-update', handleTaskUpdate);
+  useSocketEvent(socket, 'task-created', handleTaskCreated);
+  useSocketEvent(socket, 'task-deleted', handleTaskDeleted);
+  useSocketEvent(socket, 'task-escalated', handleTaskEscalated);
+  useSocketEvent(socket, 'task-rollback', handleTaskRollback);
+  useSocketEvent(socket, 'task-status-updated', handleTaskStatusUpdated);
 
   // Rollback escalated task
   const handleRollbackTask = async (task: DailyTask) => {
@@ -176,10 +232,18 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
               Manage tasks that have been escalated to you or by you.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <ArrowUpRight className="h-8 w-8 text-white/80" />
-            <span className="text-2xl font-bold">{escalatedTasks.length + escalatedByMe.length}</span>
-            <span className="text-white/80">Total Escalated</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <ArrowUpRight className="h-8 w-8 text-white/80" />
+              <span className="text-2xl font-bold">{escalatedTasks.length + escalatedByMe.length}</span>
+              <span className="text-white/80">Total Escalated</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span className="text-sm text-white/60">
+                {isConnected ? 'Real-time Connected' : 'Disconnected'}
+              </span>
+            </div>
           </div>
         </div>
       </motion.div>

@@ -27,8 +27,8 @@ import { Input } from "@/components/ui/input";
 import { DailyTask, NewDailyTask, Department, User as UserType } from "@/lib/types";
 import { DailyTaskModal } from "@/components/modals/DailyTaskModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
-import { useState, useEffect, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,62 +81,86 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
     inProgress: 0,
     closed: 0,
   });
-  const [isConnected, setIsConnected] = useState(false);
-  const [realtimeEnabled, setRealtimeEnabled] = useState(true);
-  const socketRef = useRef<Socket | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (realtimeEnabled) {
-      const socket = io("http://localhost:5000", {
-        withCredentials: true,
-      });
+  // Socket.IO for real-time updates
+  const { socket, isConnected } = useSocket();
 
-      socketRef.current = socket;
-
-      socket.on("connect", () => {
-        console.log("Connected to server");
-        setIsConnected(true);
-        socket.emit("join-admin-room");
-      });
-
-      socket.on("disconnect", () => {
-        console.log("Disconnected from server");
-        setIsConnected(false);
-      });
-
-      socket.on("new-task", (task: DailyTask) => {
-        console.log("New task received:", task);
-        setTasks(prev => [task, ...prev]);
-      });
-
-      socket.on("task-updated", (task: DailyTask) => {
-        console.log("Task updated:", task);
-        setTasks(prev => prev.map(t => t._id === task._id ? task : t));
-      });
-
-      socket.on("task-deleted", (data: { id: string }) => {
-        console.log("Task deleted:", data.id);
-        setTasks(prev => prev.filter(t => t._id !== data.id));
-      });
-
-      socket.on("task-status-updated", (task: DailyTask) => {
-        console.log("Task status updated:", task);
-        setTasks(prev => prev.map(t => t._id === task._id ? task : t));
-      });
-
-      socket.on("task-stats-update", () => {
-        fetchStats();
-      });
-
-      return () => {
-        socket.disconnect();
-        socketRef.current = null;
-      };
+  // Real-time event handlers
+  const handleTaskUpdate = useCallback((data: any) => {
+    console.log('Real-time task update received in Management:', data);
+    
+    // Update the specific task in the list
+    if (data.data && data.data._id) {
+      setTasks(prev => prev.map(t => t._id === data.data._id ? data.data : t));
     }
-  }, [realtimeEnabled]);
+    
+    // Refresh stats
+    fetchStats();
+  }, []);
+
+  const handleTaskCreated = useCallback((data: any) => {
+    console.log('Real-time task created in Management:', data);
+    
+    // Add the new task to the list
+    if (data.data) {
+      setTasks(prev => [data.data, ...prev]);
+    }
+    
+    // Refresh stats
+    fetchStats();
+  }, []);
+
+  const handleTaskDeleted = useCallback((data: any) => {
+    console.log('Real-time task deleted in Management:', data);
+    
+    // Remove the deleted task from the list
+    if (data.data && data.data.id) {
+      setTasks(prev => prev.filter(t => t._id !== data.data.id));
+    }
+    
+    // Refresh stats
+    fetchStats();
+  }, []);
+
+  const handleTaskEscalated = useCallback((data: any) => {
+    console.log('Real-time task escalated in Management:', data);
+    
+    // Update the escalated task in the list
+    if (data.data && data.data._id) {
+      setTasks(prev => prev.map(t => t._id === data.data._id ? data.data : t));
+    }
+    
+    // Refresh stats
+    fetchStats();
+  }, []);
+
+  const handleTaskRollback = useCallback((data: any) => {
+    console.log('Real-time task rollback in Management:', data);
+    
+    // Update the rolled back task in the list
+    if (data.data && data.data._id) {
+      setTasks(prev => prev.map(t => t._id === data.data._id ? data.data : t));
+    }
+    
+    // Refresh stats
+    fetchStats();
+  }, []);
+
+  // Set up real-time event listeners
+  useSocketEvent(socket, 'task-update', handleTaskUpdate);
+  useSocketEvent(socket, 'task-created', handleTaskCreated);
+  useSocketEvent(socket, 'task-deleted', handleTaskDeleted);
+  useSocketEvent(socket, 'task-escalated', handleTaskEscalated);
+  useSocketEvent(socket, 'task-rollback', handleTaskRollback);
+
+  // Join admin room when connected
+  useEffect(() => {
+    if (socket && isConnected) {
+      socket.emit('join-admin-room');
+    }
+  }, [socket, isConnected]);
 
   // Fetch tasks from backend
   useEffect(() => {

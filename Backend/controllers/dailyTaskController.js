@@ -3,6 +3,32 @@ const User = require("../models/User");
 const Department = require("../models/Department");
 const mongoose = require("mongoose");
 
+// Helper function to emit real-time updates
+const emitTaskUpdate = (req, eventType, data) => {
+  const io = req.app.get('io');
+  if (io) {
+    console.log(`Emitting real-time event: ${eventType}`, { 
+      data: data._id || data.id, 
+      timestamp: new Date(),
+      connectedClients: io.engine.clientsCount 
+    });
+    
+    // Emit specific event type to all connected clients
+    io.emit(eventType, data);
+    
+    // Emit to admin room specifically
+    io.to('admin-room').emit(eventType, data);
+    
+    // Emit stats update to trigger statistics refresh
+    io.emit('task-stats-update');
+    io.to('admin-room').emit('task-stats-update');
+    
+    console.log(`Event ${eventType} emitted successfully`);
+  } else {
+    console.log('Socket.IO not available for emitting events');
+  }
+};
+
 // Get all daily tasks
 const getAllDailyTasks = async (req, res) => {
   try {
@@ -267,12 +293,8 @@ const createDailyTask = async (req, res) => {
       .populate("department", "name")
       .populate("createdBy", "name email");
 
-    // Emit real-time update to admin room
-    const io = req.app.get('io');
-    if (io) {
-      io.to('admin-room').emit('new-task', populatedTask);
-      io.to('admin-room').emit('task-stats-update');
-    }
+    // Emit real-time update
+    emitTaskUpdate(req, 'new-task', populatedTask);
 
     res.status(201).json(populatedTask);
   } catch (error) {
@@ -305,12 +327,8 @@ const updateDailyTask = async (req, res) => {
       return res.status(404).json({ error: "Daily task not found" });
     }
 
-    // Emit real-time update to admin room
-    const io = req.app.get('io');
-    if (io) {
-      io.to('admin-room').emit('task-updated', updatedTask);
-      io.to('admin-room').emit('task-stats-update');
-    }
+    // Emit real-time update
+    emitTaskUpdate(req, 'task-updated', updatedTask);
 
     res.json(updatedTask);
   } catch (error) {
@@ -330,12 +348,8 @@ const deleteDailyTask = async (req, res) => {
       return res.status(404).json({ error: "Daily task not found" });
     }
 
-    // Emit real-time update to admin room
-    const io = req.app.get('io');
-    if (io) {
-      io.to('admin-room').emit('task-deleted', { id });
-      io.to('admin-room').emit('task-stats-update');
-    }
+    // Emit real-time update
+    emitTaskUpdate(req, 'task-deleted', { id });
 
     res.json({ message: "Daily task deleted successfully" });
   } catch (error) {
@@ -367,12 +381,8 @@ const updateDailyTaskStatus = async (req, res) => {
       return res.status(404).json({ error: "Daily task not found" });
     }
 
-    // Emit real-time update to admin room
-    const io = req.app.get('io');
-    if (io) {
-      io.to('admin-room').emit('task-status-updated', updatedTask);
-      io.to('admin-room').emit('task-stats-update');
-    }
+    // Emit real-time update
+    emitTaskUpdate(req, 'task-status-updated', updatedTask);
 
     res.json(updatedTask);
   } catch (error) {
@@ -482,6 +492,20 @@ const escalateTask = async (req, res) => {
       .populate("escalatedBy", "name email")
       .populate("originalUser", "name email");
 
+    // Emit real-time update
+    emitTaskUpdate(req, 'task-escalated', updatedTask);
+    
+    // Also emit to the escalated user specifically
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user-${escalatedTo}`).emit('task-assigned', {
+        type: 'task-escalated',
+        task: updatedTask,
+        timestamp: new Date(),
+        message: `Task escalated to you: ${updatedTask.task || 'Untitled task'}`
+      });
+    }
+
     res.json(updatedTask);
   } catch (error) {
     console.error("Error escalating task:", error);
@@ -535,6 +559,9 @@ const rollbackTask = async (req, res) => {
       .populate("department", "name")
       .populate("createdBy", "name email")
       .populate("originalUser", "name email");
+
+    // Emit real-time update
+    emitTaskUpdate(req, 'task-rollback', updatedTask);
 
     res.json(updatedTask);
   } catch (error) {
