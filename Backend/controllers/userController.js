@@ -136,15 +136,30 @@ exports.resetUserPassword = async (req, res) => {
 // Delete user
 exports.deleteUser = async (req, res) => {
   try {
-    // Check if user exists and is not superadmin
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });
-    
-    // Prevent deletion of superadmin users
+
+    // No one can delete a superadmin
     if (user.isSuperAdmin || user.role === "superadmin") {
       return res.status(403).json({ error: "Cannot delete superadmin user" });
     }
-    
+
+    // Only superadmin or admin can delete
+    if (req.user.role === "superadmin") {
+      // Superadmin can delete admins and users (but not superadmins)
+      if (user.role === "superadmin" || user.isSuperAdmin) {
+        return res.status(403).json({ error: "Cannot delete superadmin user" });
+      }
+    } else if (req.user.role === "admin") {
+      // Admin can only delete users (not admins or superadmins)
+      if (user.role !== "user") {
+        return res.status(403).json({ error: "Admin can only delete normal users" });
+      }
+    } else {
+      // Other roles cannot delete
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     await User.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "User deleted" });
   } catch (err) {

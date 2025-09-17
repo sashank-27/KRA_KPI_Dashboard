@@ -15,8 +15,9 @@ function authMiddleware(req, res, next) {
 }
 
 function adminMiddleware(req, res, next) {
-  if (req.user.role !== "admin")
+  if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     return res.status(403).json({ error: "Forbidden" });
+  }
   next();
 }
 
