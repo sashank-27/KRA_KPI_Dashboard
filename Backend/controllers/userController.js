@@ -219,8 +219,14 @@ exports.getSystemHealth = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const { email, username, password } = req.body;
+  // Accept either email or username for login
+  const user = await User.findOne({
+    $or: [
+      email ? { email } : {},
+      username ? { username } : {}
+    ]
+  });
   if (!user) return res.status(401).json({ error: "Invalid credentials" });
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(401).json({ error: "Invalid credentials" });

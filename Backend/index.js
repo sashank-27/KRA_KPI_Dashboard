@@ -46,42 +46,26 @@ app.get("/", (req, res) => {
 });
 
 async function seedSuperAdmin() {
-  const superAdmin = await User.findOne({ email: "tyrone@superadmin.com" });
-  if (!superAdmin) {
-    const hash = await bcrypt.hash("Sashan12k", 10);
-    await User.create({
-      username: "tyrone",
-      name: "Tyrone Super Admin",
-      email: "tyrone@superadmin.com",
-      password: hash,
-      role: "superadmin",
-      isSuperAdmin: true,
-      // No department for superadmin
-    });
-    console.log("Superadmin user created successfully");
+  const hash = await bcrypt.hash("Sashan12k", 10);
+  const update = {
+    username: "tyrone",
+    name: "Tyrone Super Admin",
+    email: "tyrone@netwebindia.com",
+    password: hash,
+    role: "superadmin",
+    isSuperAdmin: true,
+    // No department for superadmin
+  };
+  const result = await User.findOneAndUpdate(
+    { $or: [ { email: "tyrone@netwebindia.com" }, { username: "tyrone" } ] },
+    update,
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  if (result) {
+    console.log("Superadmin user ensured/updated successfully");
   }
 }
 
-async function seedAdmin() {
-  const admin = await User.findOne({ email: "admin@gmail.com" });
-  if (!admin) {
-    // Create a default admin department if it doesn't exist
-    let adminDepartment = await Department.findOne({ name: "Administration" });
-    if (!adminDepartment) {
-      adminDepartment = await Department.create({ name: "Administration" });
-    }
-    
-    const hash = await bcrypt.hash("password123", 10);
-    await User.create({
-      username: "admin",
-      name: "Administrator",
-      email: "admin@gmail.com",
-      password: hash,
-      role: "admin",
-      department: adminDepartment._id,
-    });
-  }
-}
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -133,7 +117,6 @@ app.set('io', io);
 connectDB().then(async () => {
   console.log("Database connected, seeding users...");
   await seedSuperAdmin();
-  await seedAdmin();
   console.log("Users seeded, starting server...");
   server.listen(5000, () => {
     console.log("Server started on http://localhost:5000");

@@ -24,7 +24,7 @@ interface LoginPageProps {
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -41,7 +41,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: identifier, username: identifier, password }),
         credentials: "include", // Allow cookies to be set
       });
       if (!response.ok) {
@@ -65,7 +65,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         }, 100);
       }
       if (onLogin) {
-        onLogin(email, password);
+        onLogin(identifier, password);
       }
     } catch (err: any) {
       setIsLoading(false);
@@ -164,19 +164,19 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 onSubmit={handleSubmit}
                 className="space-y-4"
               >
-                {/* Email Field */}
+                {/* Email or Username Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700 font-medium">
-                    Email Address
+                  <Label htmlFor="identifier" className="text-gray-700 font-medium">
+                    Email or Username
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="identifier"
+                      type="text"
+                      placeholder="Enter your email or username"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                       className="pl-10 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
                       required
                     />
