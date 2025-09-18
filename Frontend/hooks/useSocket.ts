@@ -16,7 +16,6 @@ export const useSocket = () => {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-      maxReconnectionAttempts: 5,
       autoConnect: true,
       upgrade: true,
       rememberUpgrade: false
