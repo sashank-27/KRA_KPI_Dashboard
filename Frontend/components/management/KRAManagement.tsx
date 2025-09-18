@@ -453,7 +453,9 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
           }}
           newKRA={{
             title: editingKRA.title,
-            responsibilityAreas: editingKRA.responsibilityAreas.join('\n'),
+            responsibilityAreas: Array.isArray(editingKRA.responsibilityAreas)
+              ? editingKRA.responsibilityAreas.join('\n')
+              : editingKRA.responsibilityAreas || '',
             department: typeof editingKRA.department === 'string' 
               ? editingKRA.department 
               : editingKRA.department?._id || '',
@@ -469,6 +471,9 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
             setEditingKRA({
               ...editingKRA,
               ...updatedKRA,
+              responsibilityAreas: typeof updatedKRA.responsibilityAreas === 'string'
+                ? updatedKRA.responsibilityAreas.split('\n').map(s => s.trim()).filter(Boolean)
+                : updatedKRA.responsibilityAreas,
             });
           }}
           departments={departments}

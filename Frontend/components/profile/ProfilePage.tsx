@@ -161,7 +161,7 @@ export function ProfilePage({
       if (file.type.startsWith('image/')) {
         const event = {
           target: { files: [file] }
-        } as React.ChangeEvent<HTMLInputElement>;
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
         handleImageUpload(event);
       }
     }

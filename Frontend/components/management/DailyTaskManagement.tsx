@@ -59,6 +59,7 @@ interface DailyTaskManagementProps {
 }
 
 export function DailyTaskManagement({ departments, users }: DailyTaskManagementProps) {
+  const [realtimeEnabled, setRealtimeEnabled] = useState(false);
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [editTaskOpen, setEditTaskOpen] = useState(false);
@@ -170,7 +171,8 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/daily-tasks", {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const res = await fetch(`${apiUrl}/api/daily-tasks`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -194,7 +196,8 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
 
   const fetchStats = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/daily-tasks/stats", {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const res = await fetch(`${apiUrl}/api/daily-tasks/stats`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -212,7 +215,8 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
   const handleCreateTask = async () => {
     if (newTask.srId && newTask.remarks) {
       try {
-        const res = await fetch("http://localhost:5000/api/daily-tasks", {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const res = await fetch(`${apiUrl}/api/daily-tasks`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -233,6 +237,7 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
         setTasks([createdTask, ...tasks]);
         setCreateTaskOpen(false);
         setNewTask({
+          task: "",
           srId: "",
           remarks: "",
           status: "in-progress",
@@ -256,7 +261,8 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
   // Update task
   const handleUpdateTask = async (updatedTask: DailyTask) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/${updatedTask._id}`, {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const res = await fetch(`${apiUrl}/api/daily-tasks/${updatedTask._id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -293,7 +299,8 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
   const confirmDeleteTask = async () => {
     if (taskToDelete) {
       try {
-        const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskToDelete._id}`, {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const res = await fetch(`${apiUrl}/api/daily-tasks/${taskToDelete._id}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -342,16 +349,15 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
   // Bulk delete selected tasks
   const handleBulkDelete = async () => {
     if (selectedTasks.length === 0) return;
-    
     try {
-      const deletePromises = selectedTasks.map(taskId => 
-        fetch(`http://localhost:5000/api/daily-tasks/${taskId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const deletePromises = selectedTasks.map(taskId =>
+        fetch(`${apiUrl}/api/daily-tasks/${taskId}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
           credentials: "include",
         })
       );
-      
       await Promise.all(deletePromises);
       setTasks(tasks.filter(task => !selectedTasks.includes(task._id)));
       setSelectedTasks([]);
@@ -777,12 +783,6 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
             remarks: editingTask.remarks,
             status: editingTask.status,
             date: editingTask.date.split('T')[0],
-            user: typeof editingTask.user === 'string' 
-              ? editingTask.user 
-              : editingTask.user?._id || '',
-            department: typeof editingTask.department === 'string' 
-              ? editingTask.department 
-              : editingTask.department?._id || '',
             tags: editingTask.tags,
           }}
           setNewTask={(updatedTask) => {

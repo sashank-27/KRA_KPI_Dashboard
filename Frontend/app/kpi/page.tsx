@@ -660,7 +660,12 @@ export default function KPIDashboard() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {users.find(u => u._id === selectedUser)?.department?.name || 'N/A'}
+                      {(() => {
+                        const dept = users.find(u => u._id === selectedUser)?.department;
+                        if (!dept) return 'N/A';
+                        if (typeof dept === 'string') return dept;
+                        return dept.name || 'N/A';
+                      })()}
                     </TableCell>
                     <TableCell>{userKpiData.total}</TableCell>
                     <TableCell>{userKpiData.closed}</TableCell>

@@ -125,8 +125,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
         forceNew: true,
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        maxReconnectionAttempts: 5,
+  reconnectionAttempts: 5,
         autoConnect: true,
         upgrade: true,
         rememberUpgrade: false
@@ -397,18 +396,18 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
       setHasMoreData(tasksData.length === limit);
     } catch (err) {
       console.error("Failed to fetch daily tasks", err);
-      console.error("Error details:", {
-        message: err.message,
-        name: err.name,
-        stack: err.stack
-      });
-      
-      // Check if it's a network error
-      if (err.message === 'Failed to fetch') {
-        console.error("Network error: Backend server might not be running on http://localhost:5000");
-        alert("Unable to connect to server. Please ensure the backend server is running on http://localhost:5000");
+      if (err instanceof Error) {
+        console.error("Error details:", {
+          message: err.message,
+          name: err.name,
+          stack: err.stack
+        });
+        // Check if it's a network error
+        if (err.message === 'Failed to fetch') {
+          console.error("Network error: Backend server might not be running on http://localhost:5000");
+          alert("Unable to connect to server. Please ensure the backend server is running on http://localhost:5000");
+        }
       }
-      
       setTasks([]);
     } finally {
       setIsLoadingMore(false);
@@ -467,15 +466,16 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
       }
     } catch (err) {
       console.error("Failed to fetch daily task stats", err);
-      console.error("Error details:", {
-        message: err.message,
-        name: err.name,
-        stack: err.stack
-      });
-      
-      // Check if it's a network error
-      if (err.message === 'Failed to fetch') {
-        console.error("Network error: Backend server might not be running on http://localhost:5000");
+      if (err instanceof Error) {
+        console.error("Error details:", {
+          message: err.message,
+          name: err.name,
+          stack: err.stack
+        });
+        // Check if it's a network error
+        if (err.message === 'Failed to fetch') {
+          console.error("Network error: Backend server might not be running on http://localhost:5000");
+        }
       }
     }
   };
@@ -505,6 +505,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
         setTasks([createdTask, ...tasks]);
         setCreateTaskOpen(false);
         setNewTask({
+          task: "",
           srId: "",
           remarks: "",
           status: "in-progress",
@@ -1352,12 +1353,6 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
             remarks: editingTask.remarks,
             status: editingTask.status,
             date: editingTask.date.split('T')[0],
-            user: typeof editingTask.user === 'string' 
-              ? editingTask.user 
-              : editingTask.user?._id || '',
-            department: typeof editingTask.department === 'string' 
-              ? editingTask.department 
-              : editingTask.department?._id || '',
             tags: editingTask.tags,
           }}
           setNewTask={(updatedTask) => {

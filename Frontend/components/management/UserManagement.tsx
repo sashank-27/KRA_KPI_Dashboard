@@ -428,12 +428,15 @@ export function UserManagement({
               typeof editingUser.department === "string"
                 ? editingUser.department
                 : editingUser.department?._id ?? "",
-            role: editingUser.role ?? "",
+            role: (editingUser.role as "user" | "admin" | "superadmin") ?? "user",
           }}
           setNewUser={(updatedUser) => {
             setEditingUser({
               ...editingUser,
               ...updatedUser,
+              role: ["user", "admin", "superadmin"].includes(updatedUser.role)
+                ? (updatedUser.role as "user" | "admin" | "superadmin")
+                : "user",
             });
           }}
           departments={departments}
