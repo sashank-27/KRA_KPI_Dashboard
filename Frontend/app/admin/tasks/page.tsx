@@ -4,6 +4,7 @@ import { RealTimeTaskDashboard } from "@/components/dashboard/RealTimeTaskDashbo
 import { useEffect, useState } from "react";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { Department, User } from "@/lib/types";
+import { getApiBaseUrl } from "@/lib/api";
 
 export default function AdminTasksPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -17,7 +18,7 @@ export default function AdminTasksPage() {
   const fetchData = async () => {
     try {
       // Fetch departments
-      const deptRes = await fetch("http://localhost:5000/api/departments", {
+      const deptRes = await fetch(`${getApiBaseUrl()}/api/departments`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -28,7 +29,7 @@ export default function AdminTasksPage() {
       }
 
       // Fetch users
-      const userRes = await fetch("http://localhost:5000/api/users", {
+      const userRes = await fetch(`${getApiBaseUrl()}/api/users`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });

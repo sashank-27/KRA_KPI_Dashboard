@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTask, NewDailyTask, Department, User as UserType } from "@/lib/types";
+import { getApiBaseUrl } from "@/lib/api";
 import { DailyTaskModal } from "@/components/modals/DailyTaskModal";
 import { getAuthHeaders, requireAuth, isAuthenticated } from "@/lib/auth";
 import { useState, useEffect, useRef } from "react";
@@ -73,6 +74,19 @@ interface RealTimeTaskDashboardProps {
 
 export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashboardProps) {
   const [tasks, setTasks] = useState<DailyTask[]>([]);
+  // Get current user from JWT
+  const currentUser = (() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const token = document.cookie.split(';').find(cookie => cookie.trim().startsWith('jwtToken='));
+        if (token) {
+          const payload = JSON.parse(atob(token.split('=')[1].split('.')[1]));
+          return { _id: payload.id };
+        }
+      } catch {}
+    }
+    return null;
+  })();
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<DailyTask | null>(null);
@@ -118,7 +132,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
     if (realtimeEnabled) {
       console.log("Initializing WebSocket connection...");
       
-      const socket = io("http://localhost:5000", {
+  const socket = io(getApiBaseUrl(), {
         withCredentials: true,
         transports: ['websocket', 'polling'],
         timeout: 20000,
@@ -263,6 +277,28 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
         }
       });
 
+      // Listen for real-time escalated task updates (for admin dashboard)
+      socket.on("task-escalated", (task) => {
+        console.log("Task escalated:", task);
+        setTasks(prev => {
+          const taskExists = prev.some(t => t._id === task._id);
+          if (taskExists) {
+            // Update existing task
+            return prev.map(t => t._id === task._id ? task : t);
+          } else {
+            // Add new task if it doesn't exist
+            return [task, ...prev];
+          }
+        });
+        setRecentActivity(prev => [{
+          type: "escalate",
+          task,
+          timestamp: new Date(),
+          message: `Task escalated: ${task.task || 'Untitled task'}`
+        }, ...prev.slice(0, 9)]);
+        setLastUpdate(new Date());
+      });
+
 
       return () => {
         console.log("Cleaning up socket connection");
@@ -356,7 +392,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
         params.append('department', departmentFilter);
       }
       
-      const res = await fetch(`http://localhost:5000/api/daily-tasks?${params.toString()}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks?${params.toString()}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -455,7 +491,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
         return;
       }
       
-      const res = await fetch("http://localhost:5000/api/daily-tasks/stats", {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/stats`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -484,7 +520,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
   const handleCreateTask = async () => {
     if (newTask.srId && newTask.remarks) {
       try {
-        const res = await fetch("http://localhost:5000/api/daily-tasks", {
+        const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -529,7 +565,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
   // Update task
   const handleUpdateTask = async (updatedTask: DailyTask) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/${updatedTask._id}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${updatedTask._id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -584,7 +620,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
   const confirmEscalateTask = async () => {
     if (taskToEscalate && escalateToUser) {
       try {
-        const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskToEscalate._id}/escalate`, {
+        const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${taskToEscalate._id}/escalate`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -627,7 +663,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
   const confirmDeleteTask = async () => {
     if (taskToDelete) {
       try {
-        const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskToDelete._id}`, {
+        const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${taskToDelete._id}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -679,7 +715,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
     
     try {
       const deletePromises = selectedTasks.map(taskId => 
-        fetch(`http://localhost:5000/api/daily-tasks/${taskId}`, {
+        fetch(`${getApiBaseUrl()}/api/daily-tasks/${taskId}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -1148,25 +1184,27 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                         {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            {/* Escalate Button - only show for in-progress tasks that are not already escalated */}
-                            {task.status === 'in-progress' && !task.isEscalated && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEscalateTask(task)}
-                                    className="h-8 px-3 hover:bg-orange-100 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md text-orange-700 border-orange-300"
-                                  >
-                                    <ArrowUpDown className="h-4 w-4 mr-1" />
-                                    Escalate
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="font-medium">Escalate Task</p>
-                                  <p className="text-xs text-gray-500">Click to escalate this task to another user</p>
-                                </TooltipContent>
-                              </Tooltip>
+                            {/* Escalate Button - only show for in-progress, not escalated, and owned tasks */}
+                            {task.status === 'in-progress' && !task.isEscalated && currentUser &&
+                              ((typeof task.user === 'string' && task.user === currentUser._id) ||
+                               (typeof task.user === 'object' && task.user?._id === currentUser._id)) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEscalateTask(task)}
+                                      className="h-8 px-3 hover:bg-orange-100 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md text-orange-700 border-orange-300"
+                                    >
+                                      <ArrowUpDown className="h-4 w-4 mr-1" />
+                                      Escalate
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-medium">Escalate Task</p>
+                                    <p className="text-xs text-gray-500">Click to escalate this task to another user</p>
+                                  </TooltipContent>
+                                </Tooltip>
                             )}
                             
                             {/* Escalated Task Info - show escalation details */}

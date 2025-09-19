@@ -1,5 +1,6 @@
 "use client";
 
+import { getApiBaseUrl } from "@/lib/api";
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
@@ -8,7 +9,7 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000', {
+    const newSocket = io(getApiBaseUrl(), {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       timeout: 20000,

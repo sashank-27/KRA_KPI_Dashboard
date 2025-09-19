@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { User as UserType, Department } from "@/lib/types";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface KPIData {
   userId: string;
@@ -99,7 +100,7 @@ export default function KPIDashboard() {
   const fetchUsers = async () => {
     try {
       console.log("Fetching users...");
-      const res = await fetch("http://localhost:5000/api/users", {
+      const res = await fetch(`${getApiBaseUrl()}/api/users`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -118,7 +119,7 @@ export default function KPIDashboard() {
   const fetchDepartments = async () => {
     try {
       console.log("Fetching departments...");
-      const res = await fetch("http://localhost:5000/api/departments", {
+      const res = await fetch(`${getApiBaseUrl()}/api/departments`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -148,7 +149,7 @@ export default function KPIDashboard() {
         if (dateTo) params.append("dateTo", dateTo);
       }
 
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/kpi/all?${params}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/kpi/all?${params}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -181,7 +182,7 @@ export default function KPIDashboard() {
         if (dateTo) params.append("dateTo", dateTo);
       }
 
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/kpi/user/${selectedUser}?${params}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/kpi/user/${selectedUser}?${params}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });

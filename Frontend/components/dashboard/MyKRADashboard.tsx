@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { KRA } from "@/lib/types";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
+import { getApiBaseUrl } from "@/lib/api";
 import { useState, useEffect } from "react";
 import {
   Select,
@@ -57,7 +58,7 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
         return;
       }
       
-      const res = await fetch(`http://localhost:5000/api/kras/user/${currentUserId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/kras/user/${currentUserId}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });

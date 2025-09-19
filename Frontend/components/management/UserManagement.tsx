@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, NewUser, Department } from "@/lib/types";
+import { getApiBaseUrl } from "@/lib/api";
 import { UserModal } from "@/components/modals/UserModal";
 import { getAuthHeaders, getAuthToken, requireAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
@@ -81,7 +82,7 @@ export function UserManagement({
   // Reset user password
   const handleResetPassword = async (userId: string, newPassword: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${userId}/reset-password`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/users/${userId}/reset-password`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -116,7 +117,7 @@ export function UserManagement({
       newUser.role
     ) {
       try {
-        const res = await fetch("http://localhost:5000/api/users", {
+        const res = await fetch(`${getApiBaseUrl()}/api/users`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -182,7 +183,7 @@ export function UserManagement({
   const handleUpdateUserLocal = async (updatedUser: User) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/users/${updatedUser._id}`,
+        `${getApiBaseUrl()}/api/users/${updatedUser._id}`,
         {
           method: "PUT",
           headers: getAuthHeaders(),
@@ -219,7 +220,7 @@ export function UserManagement({
     if (userToDelete) {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/users/${userToDelete._id}`,
+          `${getApiBaseUrl()}/api/users/${userToDelete._id}`,
           {
             method: "DELETE",
             headers: getAuthHeaders(),

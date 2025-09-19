@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DailyTask, Department, User as UserType } from "@/lib/types";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
+import { getApiBaseUrl } from "@/lib/api";
 import { useState, useEffect, useCallback } from "react";
 import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
@@ -57,7 +58,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
       setIsLoading(true);
       
       // Fetch tasks escalated to current user
-      const escalatedToMeRes = await fetch(`http://localhost:5000/api/daily-tasks/escalated/${currentUserId}`, {
+      const escalatedToMeRes = await fetch(`${getApiBaseUrl()}/api/daily-tasks/escalated/${currentUserId}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -69,7 +70,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
       }
       
       // Fetch tasks escalated by current user
-      const escalatedByMeRes = await fetch(`http://localhost:5000/api/daily-tasks/escalated-by/${currentUserId}`, {
+      const escalatedByMeRes = await fetch(`${getApiBaseUrl()}/api/daily-tasks/escalated-by/${currentUserId}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -145,7 +146,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
     if (!confirm("Are you sure you want to rollback this escalated task?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/${task._id}/rollback`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${task._id}/rollback`, {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: "include",

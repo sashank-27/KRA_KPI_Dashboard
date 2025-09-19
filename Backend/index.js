@@ -6,7 +6,15 @@ const User = require("./models/User");
 const Department = require("./models/Department");
 const bcrypt = require("bcryptjs");
 
+
 const cors = require("cors");
+
+// Allow localhost, 127.0.0.1, and network IP for frontend
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://172.17.20.56:3000" // Add your network IP here
+];
 
 const userRoutes = require("./routes/userRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
@@ -28,13 +36,27 @@ const io = socketIo(server, {
   pingInterval: 25000
 });
 
-app.use(cors({ 
-  origin: ["http://localhost:3000", "http://127.0.0.1:3000"], 
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS: ' + origin));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
+
+
+// Health check route for frontend connectivity
+app.get("/api/server-status", (req, res) => {
+  res.json({ status: "ok", message: "Backend server is running" });
+});
 
 app.use("/api", userRoutes);
 app.use("/api/departments", departmentRoutes);
@@ -118,8 +140,8 @@ connectDB().then(async () => {
   console.log("Database connected, seeding users...");
   await seedSuperAdmin();
   console.log("Users seeded, starting server...");
-  server.listen(5000, () => {
-    console.log("Server started on http://localhost:5000");
+  server.listen(5000, '0.0.0.0', () => {
+    console.log("Server started on http://0.0.0.0:5000 (accessible on your network IP)");
   });
 }).catch((error) => {
   console.error("Failed to start server:", error);

@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KRA, NewKRA, Department, User as UserType } from "@/lib/types";
+import { getApiBaseUrl } from "@/lib/api";
 import { KRAModal } from "@/components/modals/KRAModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { useState, useEffect } from "react";
@@ -71,7 +72,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
 
   const fetchKRAs = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/kras", {
+      const res = await fetch(`${getApiBaseUrl()}/api/kras`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -103,7 +104,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
       newKRA.startDate
     ) {
       try {
-        const res = await fetch("http://localhost:5000/api/kras", {
+        const res = await fetch(`${getApiBaseUrl()}/api/kras`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -149,7 +150,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
   // Update KRA
   const handleUpdateKRA = async (updatedKRA: KRA) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/kras/${updatedKRA._id}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/kras/${updatedKRA._id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -185,7 +186,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
   const confirmDeleteKRA = async () => {
     if (kraToDelete) {
       try {
-        const res = await fetch(`http://localhost:5000/api/kras/${kraToDelete._id}`, {
+        const res = await fetch(`${getApiBaseUrl()}/api/kras/${kraToDelete._id}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
           credentials: "include",

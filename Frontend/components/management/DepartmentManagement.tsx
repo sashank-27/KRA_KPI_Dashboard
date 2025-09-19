@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Department, User } from "@/lib/types";
 import { DepartmentModal } from "@/components/modals/DepartmentModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
+import { getApiBaseUrl } from "@/lib/api";
 import { useState, useEffect } from "react";
 import {
   DropdownMenu,
@@ -71,7 +72,7 @@ export function DepartmentManagement({
 
   // Fetch departments from backend
   useEffect(() => {
-    fetch("http://localhost:5000/api/departments", {
+    fetch(`${getApiBaseUrl()}/api/departments`, {
       headers: getAuthHeaders(),
       credentials: "include",
     })
@@ -100,7 +101,7 @@ export function DepartmentManagement({
   const handleCreateDepartment = async () => {
     if (newDeptName.trim()) {
       try {
-        const res = await fetch("http://localhost:5000/api/departments", {
+        const res = await fetch(`${getApiBaseUrl()}/api/departments`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -136,7 +137,7 @@ export function DepartmentManagement({
   // Update department
   const handleUpdateDepartment = async (updatedDept: Department) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/departments/${updatedDept._id}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/departments/${updatedDept._id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -175,7 +176,7 @@ export function DepartmentManagement({
   const confirmDeleteDepartment = async () => {
     if (deptToDelete) {
       try {
-        const res = await fetch(`http://localhost:5000/api/departments/${deptToDelete._id}`, {
+        const res = await fetch(`${getApiBaseUrl()}/api/departments/${deptToDelete._id}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
           credentials: "include",

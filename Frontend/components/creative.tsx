@@ -7,6 +7,7 @@ import { Bell, Menu, PanelLeft, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Tooltip,
   TooltipContent,
@@ -27,8 +28,10 @@ import { RealTimeTaskDashboard } from "@/components/dashboard/RealTimeTaskDashbo
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import KPIDashboard from "@/app/kpi/page";
+import { getApiBaseUrl } from "@/lib/api";
 
 export function KRADashboard() {
+  const isMobile = useIsMobile();
   // Fetch all users and departments from backend on mount
   useEffect(() => {
     // Check if user is authenticated before making API calls
@@ -47,7 +50,7 @@ export function KRADashboard() {
   const fetchCurrentUser = async () => {
     try {
       setIsLoadingCurrentUser(true);
-      const res = await fetch("http://localhost:5000/api/me", {
+      const res = await fetch(`${getApiBaseUrl()}/api/me`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -117,7 +120,7 @@ export function KRADashboard() {
   // Update current user profile
   const handleUpdateProfile = async (updatedUser: Partial<User>) => {
     try {
-      const res = await fetch("http://localhost:5000/api/me", {
+      const res = await fetch(`${getApiBaseUrl()}/api/me`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -134,7 +137,7 @@ export function KRADashboard() {
   const fetchDepartments = async () => {
     try {
       setIsLoadingDepartments(true);
-      const res = await fetch("http://localhost:5000/api/departments", {
+      const res = await fetch(`${getApiBaseUrl()}/api/departments`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -161,7 +164,7 @@ export function KRADashboard() {
   const fetchSystemHealth = async () => {
     try {
       setIsLoadingSystemHealth(true);
-      const res = await fetch("http://localhost:5000/api/health", {
+      const res = await fetch(`${getApiBaseUrl()}/api/health`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -179,7 +182,7 @@ export function KRADashboard() {
   const fetchUsers = async () => {
     try {
       setIsLoadingUsers(true);
-      const res = await fetch("http://localhost:5000/api/users", {
+      const res = await fetch(`${getApiBaseUrl()}/api/users`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -206,7 +209,7 @@ export function KRADashboard() {
   // Create user
   const handleCreateUser = async (user: Omit<User, "_id">) => {
     try {
-      const res = await fetch("http://localhost:5000/api/users", {
+      const res = await fetch(`${getApiBaseUrl()}/api/users`, {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -223,7 +226,7 @@ export function KRADashboard() {
   // Update user
   const handleUpdateUser = async (id: string, user: Partial<User>) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/users/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -239,7 +242,7 @@ export function KRADashboard() {
   // Delete user
   const handleDeleteUser = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/users/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -439,59 +442,61 @@ export function KRADashboard() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <TabsList className={`grid w-full max-w-[1200px] ${isLoadingCurrentUser ? 'grid-cols-7' : (isUserAdmin ? 'grid-cols-7' : 'grid-cols-4')} rounded-2xl p-1`}>
-                {(isLoadingCurrentUser || isUserAdmin) && (
+            {!isMobile && !isLoadingCurrentUser && (
+              <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <TabsList className={`grid w-full max-w-[1200px] ${isUserAdmin ? 'grid-cols-7' : 'grid-cols-4'} rounded-2xl p-1`}>
+                  {isUserAdmin && (
+                    <TabsTrigger
+                      value="home"
+                      className="rounded-xl data-[state=active]:rounded-xl"
+                    >
+                      Dashboard
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger
-                    value="home"
+                    value="my-kra"
                     className="rounded-xl data-[state=active]:rounded-xl"
                   >
-                    Dashboard
+                    My KRA
                   </TabsTrigger>
-                )}
-                <TabsTrigger
-                  value="my-kra"
-                  className="rounded-xl data-[state=active]:rounded-xl"
-                >
-                  My KRA
-                </TabsTrigger>
-                <TabsTrigger
-                  value="my-tasks"
-                  className="rounded-xl data-[state=active]:rounded-xl"
-                >
-                  My Tasks
-                </TabsTrigger>
-                <TabsTrigger
-                  value="escalated-tasks"
-                  className="rounded-xl data-[state=active]:rounded-xl"
-                >
-                  Escalated
-                </TabsTrigger>
-                {(isLoadingCurrentUser || isUserAdmin) && (
                   <TabsTrigger
-                    value="tasks-dashboard"
+                    value="my-tasks"
                     className="rounded-xl data-[state=active]:rounded-xl"
                   >
-                    Tasks Dashboard
+                    My Tasks
                   </TabsTrigger>
-                )}
-                {(isLoadingCurrentUser || isUserAdmin) && (
                   <TabsTrigger
-                    value="apps"
+                    value="escalated-tasks"
                     className="rounded-xl data-[state=active]:rounded-xl"
-                    onClick={() => setActiveManagementView("all")}
                   >
-                    Management
+                    Escalated
                   </TabsTrigger>
-                )}
-                <TabsTrigger
-                  value="profile"
-                  className="rounded-xl data-[state=active]:rounded-xl"
-                >
-                  Profile
-                </TabsTrigger>
-              </TabsList>
-            </div>
+                  {isUserAdmin && (
+                    <TabsTrigger
+                      value="tasks-dashboard"
+                      className="rounded-xl data-[state=active]:rounded-xl"
+                    >
+                      Tasks Dashboard
+                    </TabsTrigger>
+                  )}
+                  {isUserAdmin && (
+                    <TabsTrigger
+                      value="apps"
+                      className="rounded-xl data-[state=active]:rounded-xl"
+                      onClick={() => setActiveManagementView("all")}
+                    >
+                      Management
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger
+                    value="profile"
+                    className="rounded-xl data-[state=active]:rounded-xl"
+                  >
+                    Profile
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            )}
 
             <AnimatePresence mode="wait">
               <motion.div

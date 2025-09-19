@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DailyTask, NewDailyTask, Department, User as UserType } from "@/lib/types";
+import { getApiBaseUrl } from "@/lib/api";
 import { DailyTaskModal } from "@/components/modals/DailyTaskModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
@@ -117,7 +118,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   const fetchUserTasks = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/user/${currentUserId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/user/${currentUserId}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -196,7 +197,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   const handleCreateTask = async () => {
     if (newTask.task && newTask.remarks) {
       try {
-        const res = await fetch("http://localhost:5000/api/daily-tasks", {
+        const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
@@ -235,7 +236,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   // Update task status
   const handleUpdateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskId}/status`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${taskId}/status`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -290,7 +291,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
     if (!taskToEscalate || !escalatedTo) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/${taskToEscalate._id}/escalate`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${taskToEscalate._id}/escalate`, {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -327,7 +328,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
     if (!confirm("Are you sure you want to rollback this escalated task?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/daily-tasks/${task._id}/rollback`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${task._id}/rollback`, {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: "include",

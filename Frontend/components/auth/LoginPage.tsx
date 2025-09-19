@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface LoginPageProps {
   onLogin?: (email: string, password: string) => void;
@@ -36,7 +37,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
+      const response = await fetch(`${getApiBaseUrl()}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
