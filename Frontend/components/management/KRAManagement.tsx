@@ -55,14 +55,11 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
   const [deleteKRAOpen, setDeleteKRAOpen] = useState(false);
   const [kraToDelete, setKraToDelete] = useState<KRA | null>(null);
   const [newKRA, setNewKRA] = useState<NewKRA>({
-    title: "",
     responsibilityAreas: "",
     department: "",
     assignedTo: "",
     startDate: "",
     endDate: "",
-    description: "",
-    priority: "medium",
   });
 
   // Fetch KRAs from backend
@@ -97,7 +94,6 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
   // Create KRA
   const handleCreateKRA = async () => {
     if (
-      newKRA.title &&
       newKRA.responsibilityAreas &&
       newKRA.department &&
       newKRA.assignedTo &&
@@ -110,7 +106,6 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
           credentials: "include",
           body: JSON.stringify(newKRA),
         });
-        
         if (!res.ok) {
           if (res.status === 401) {
             console.log('Unauthorized access, redirecting to login');
@@ -120,19 +115,15 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `Failed to create KRA: ${res.status} ${res.statusText}`);
         }
-        
         const createdKRA = await res.json();
         setKras([...kras, createdKRA]);
         setCreateKRAOpen(false);
         setNewKRA({
-          title: "",
           responsibilityAreas: "",
           department: "",
           assignedTo: "",
           startDate: "",
           endDate: "",
-          description: "",
-          priority: "medium",
         });
       } catch (err) {
         console.error("Failed to create KRA", err);
@@ -304,7 +295,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4 border-b">
             <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
-              <div className="col-span-4">KRA Title</div>
+              <div className="col-span-4">Responsibility Areas</div>
               <div className="col-span-2">Assigned To</div>
               <div className="col-span-2">Department</div>
               <div className="col-span-1">Priority</div>
@@ -328,11 +319,15 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
                       <Target className="h-6 w-6" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 truncate">{kra.title}</p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {kra.responsibilityAreas.length} responsibility areas
-                      </p>
-                    </div>
+                        <p className="font-semibold text-gray-900 truncate">
+                          {kra.responsibilityAreas && kra.responsibilityAreas.length > 0
+                            ? kra.responsibilityAreas[0]
+                            : 'No responsibility area'}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {kra.responsibilityAreas.length} responsibility areas
+                        </p>
+                      </div>
                   </div>
                   
                   {/* Assigned To */}
@@ -359,15 +354,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
                     </div>
                   </div>
                   
-                  {/* Priority */}
-                  <div className="col-span-1">
-                    <Badge 
-                      variant="secondary"
-                      className={`text-xs ${getPriorityColor(kra.priority)}`}
-                    >
-                      {kra.priority}
-                    </Badge>
-                  </div>
+
                   
                   {/* Status */}
                   <div className="col-span-1">
@@ -438,11 +425,11 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
       <KRAModal
         isOpen={createKRAOpen}
         onClose={() => setCreateKRAOpen(false)}
-        newKRA={newKRA}
-        setNewKRA={setNewKRA}
-        departments={departments}
-        users={users}
-        onCreateKRA={handleCreateKRA}
+          newKRA={newKRA}
+          setNewKRA={setNewKRA}
+          departments={departments}
+          users={users}
+          onCreateKRA={handleCreateKRA}
       />
 
       {editingKRA && (
@@ -453,7 +440,6 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
             setEditingKRA(null);
           }}
           newKRA={{
-            title: editingKRA.title,
             responsibilityAreas: Array.isArray(editingKRA.responsibilityAreas)
               ? editingKRA.responsibilityAreas.join('\n')
               : editingKRA.responsibilityAreas || '',
@@ -465,8 +451,6 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
               : editingKRA.assignedTo?._id || '',
             startDate: editingKRA.startDate,
             endDate: editingKRA.endDate || '',
-            description: editingKRA.description || '',
-            priority: editingKRA.priority,
           }}
           setNewKRA={(updatedKRA) => {
             setEditingKRA({
@@ -493,9 +477,7 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              KRA <strong>{kraToDelete?.title}</strong> and all its
-              associated data.
+              This action cannot be undone. This will permanently delete the KRA and all its associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -34,7 +34,6 @@ export interface NewUser {
 
 export interface KRA {
   _id: string;
-  title: string;
   responsibilityAreas: string[];
   department: string | { _id: string; name: string };
   assignedTo: string | { _id: string; name: string; email: string };
@@ -42,21 +41,16 @@ export interface KRA {
   endDate?: string;
   status: "active" | "completed" | "cancelled" | "on-hold";
   createdBy: string | { _id: string; name: string; email: string };
-  description?: string;
-  priority: "low" | "medium" | "high" | "urgent";
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface NewKRA {
-  title: string;
   responsibilityAreas: string;
   department: string;
   assignedTo: string;
   startDate: string;
   endDate?: string;
-  description?: string;
-  priority?: "low" | "medium" | "high" | "urgent";
 }
 
 export interface DailyTask {

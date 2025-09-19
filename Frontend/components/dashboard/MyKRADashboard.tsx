@@ -84,14 +84,12 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
 
   // Filter KRAs based on search and filters
   const filteredKRAs = kras.filter((kra) => {
-    const matchesSearch = kra.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         kra.responsibilityAreas.some(area => 
-                           area.toLowerCase().includes(searchTerm.toLowerCase())
-                         );
+    const matchesSearch = kra.responsibilityAreas.some(area => 
+      area.toLowerCase().includes(searchTerm.toLowerCase())
+    );
     const matchesStatus = statusFilter === "all" || kra.status === statusFilter;
-    const matchesPriority = priorityFilter === "all" || kra.priority === priorityFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
+    // Remove priority filter since priority is removed
+    return matchesSearch && matchesStatus;
   });
 
   // Get status icon and color
@@ -140,18 +138,7 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
     }
   };
 
-  // Calculate statistics
-  const stats = {
-    total: kras.length,
-    active: kras.filter(kra => kra.status === "active").length,
-    completed: kras.filter(kra => kra.status === "completed").length,
-    overdue: kras.filter(kra => {
-      if (kra.status === "active" && kra.endDate) {
-        return new Date(kra.endDate) < new Date();
-      }
-      return false;
-    }).length,
-  };
+
 
   if (isLoading) {
     return (
@@ -173,134 +160,17 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
         transition={{ duration: 0.5 }}
         className="overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white"
       >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-bold">My KRAs</h2>
-            <p className="max-w-[600px] text-white/80">
-              Track and manage your assigned Key Result Areas and responsibilities.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Target className="h-8 w-8 text-white/80" />
-            <span className="text-2xl font-bold">{stats.total}</span>
-            <span className="text-white/80">Total KRAs</span>
-          </div>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold">My KRAs</h2>
+          <p className="max-w-[600px] text-white/80">
+            Track and manage your assigned Key Result Areas and responsibilities.
+          </p>
         </div>
       </motion.div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-2xl border shadow-sm p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Target className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-sm text-gray-600">Total KRAs</p>
-            </div>
-          </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-2xl border shadow-sm p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-              <p className="text-sm text-gray-600">Completed</p>
-            </div>
-          </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white rounded-2xl border shadow-sm p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
-              <p className="text-sm text-gray-600">Active</p>
-            </div>
-          </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-white rounded-2xl border shadow-sm p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.overdue}</p>
-              <p className="text-sm text-gray-600">Overdue</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white rounded-2xl border shadow-sm p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search KRAs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="on-hold">On Hold</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
 
       {/* KRA List */}
       <div className="space-y-4">
@@ -322,7 +192,11 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
                         <Target className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{kra.title}</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                          {kra.responsibilityAreas && kra.responsibilityAreas.length > 0
+                            ? kra.responsibilityAreas[0]
+                            : 'No responsibility area'}
+                        </h3>
                         <div className="flex flex-wrap gap-2 mb-3">
                           <Badge 
                             variant="secondary"
@@ -331,16 +205,8 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
                             {getStatusIcon(kra.status)}
                             <span className="ml-1 capitalize">{kra.status}</span>
                           </Badge>
-                          <Badge 
-                            variant="secondary"
-                            className={`${getPriorityColor(kra.priority)}`}
-                          >
-                            {kra.priority} Priority
-                          </Badge>
                         </div>
-                        {kra.description && (
-                          <p className="text-gray-600 text-sm mb-3">{kra.description}</p>
-                        )}
+
                       </div>
                     </div>
 

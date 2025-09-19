@@ -2,11 +2,7 @@ const mongoose = require("mongoose");
 
 const KRASchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    // title removed
     responsibilityAreas: [{
       type: String,
       required: true,
@@ -40,15 +36,8 @@ const KRASchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    description: {
-      type: String,
-      trim: true,
-    },
-    priority: {
-      type: String,
-      enum: ["low", "medium", "high", "urgent"],
-      default: "medium",
-    },
+    // description removed
+    // priority removed
   },
   { timestamps: true }
 );

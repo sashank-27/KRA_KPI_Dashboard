@@ -70,18 +70,15 @@ const getKRAsByUser = async (req, res) => {
 const createKRA = async (req, res) => {
   try {
     const {
-      title,
       responsibilityAreas,
       department,
       assignedTo,
       startDate,
       endDate,
-      description,
-      priority,
     } = req.body;
 
     // Validate required fields
-    if (!title || !responsibilityAreas || !department || !assignedTo || !startDate) {
+    if (!responsibilityAreas || !department || !assignedTo || !startDate) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -99,7 +96,6 @@ const createKRA = async (req, res) => {
 
     // Create new KRA
     const newKRA = new KRA({
-      title,
       responsibilityAreas: Array.isArray(responsibilityAreas) 
         ? responsibilityAreas 
         : responsibilityAreas.split('\n').filter(area => area.trim()),
@@ -107,8 +103,6 @@ const createKRA = async (req, res) => {
       assignedTo,
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : undefined,
-      description,
-      priority: priority || "medium",
       createdBy: req.user.id, // Assuming user ID is available in req.user
     });
 

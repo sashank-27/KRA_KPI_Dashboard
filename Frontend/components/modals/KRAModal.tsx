@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { NewKRA, Department, User as UserType } from "@/lib/types";
 
@@ -46,37 +47,26 @@ export function KRAModal({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!newKRA.title.trim()) {
-      newErrors.title = "KRA title is required";
-    }
-
     if (!newKRA.responsibilityAreas.trim()) {
       newErrors.responsibilityAreas = "Responsibility areas are required";
     }
-
     if (!newKRA.department) {
       newErrors.department = "Department is required";
     }
-
     if (!newKRA.assignedTo) {
       newErrors.assignedTo = "Assigned user is required";
     }
-
     if (!newKRA.startDate) {
       newErrors.startDate = "Start date is required";
     }
-
     // Validate date range
     if (newKRA.startDate && newKRA.endDate) {
       const startDate = new Date(newKRA.startDate);
       const endDate = new Date(newKRA.endDate);
-      
       if (endDate <= startDate) {
         newErrors.endDate = "End date must be after start date";
       }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -106,34 +96,20 @@ export function KRAModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
+
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <Target className="h-5 w-5 text-purple-600" />
             {isEdit ? "Edit KRA" : "Create New KRA"}
           </DialogTitle>
+          <DialogDescription>
+            Enter the required details to create a new KRA.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* KRA Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">
-              KRA Title <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="title"
-              placeholder="Enter KRA title"
-              value={newKRA.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              className={errors.title ? "border-red-500" : ""}
-            />
-            {errors.title && (
-              <p className="text-sm text-red-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.title}
-              </p>
-            )}
-          </div>
+
 
           {/* Responsibility Areas */}
           <div className="space-y-2">
@@ -272,40 +248,9 @@ export function KRAModal({
             </div>
           </div>
 
-          {/* Priority */}
-          <div className="space-y-2">
-            <Label htmlFor="priority" className="text-sm font-medium">
-              Priority
-            </Label>
-            <Select
-              value={newKRA.priority || "medium"}
-              onValueChange={(value) => handleInputChange("priority", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="Enter additional description (optional)"
-              value={newKRA.description || ""}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              className="min-h-[80px] resize-none"
-            />
-          </div>
+
+
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t">
