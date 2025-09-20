@@ -20,6 +20,7 @@ import { logout, getAuthHeaders, getCurrentUser, isAuthenticated, requireAuth, i
 import { DepartmentManagement } from "@/components/management/DepartmentManagement";
 import { UserManagement } from "@/components/management/UserManagement";
 import { KRAManagement } from "@/components/management/KRAManagement";
+import { DailyTaskManagement } from "@/components/management/DailyTaskManagement";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { MyKRADashboard } from "@/components/dashboard/MyKRADashboard";
 import { MyTasksDashboard } from "@/components/dashboard/MyTasksDashboard";
@@ -31,7 +32,49 @@ import KPIDashboard from "@/app/kpi/page";
 import { getApiBaseUrl } from "@/lib/api";
 
 export function KRADashboard() {
+  // ...existing code...
   const isMobile = useIsMobile();
+  // Fetch all Daily Tasks (for total count)
+  const fetchDailyTasks = async () => {
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to fetch Daily Tasks", res.status, text);
+        throw new Error("Failed to fetch Daily Tasks");
+      }
+      const data = await res.json();
+      console.log("Fetched daily tasks:", data);
+  setDailyTasks(Array.isArray(data.tasks) ? data.tasks : []);
+    } catch (err) {
+      console.error("Error in fetchDailyTasks:", err);
+      setDailyTasks([]);
+    }
+  };
+  const [todayDailyTasks, setTodayDailyTasks] = useState<DailyTask[]>([]);
+  // ...existing code...
+  // Daily Tasks state
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+  // Fetch all Daily Tasks
+  const fetchTodayDailyTasks = async () => {
+    try {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks?dateFrom=${start}&dateTo=${end}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch today's daily tasks");
+      const data = await res.json();
+      setTodayDailyTasks(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setTodayDailyTasks([]);
+    }
+  };
   // Fetch all users and departments from backend on mount
   useEffect(() => {
     // Check if user is authenticated before making API calls
@@ -40,12 +83,36 @@ export function KRADashboard() {
       requireAuth();
       return;
     }
-    
+
     fetchUsers();
     fetchDepartments();
     fetchCurrentUser();
     fetchSystemHealth();
+  fetchKRAs();
+  fetchDailyTasks();
   }, []);
+
+
+
+  // Fetch all KRAs
+  const fetchKRAs = async () => {
+    try {
+      setIsLoadingKRAs(true);
+      const res = await fetch(`${getApiBaseUrl()}/api/kras`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch KRAs");
+      const data = await res.json();
+      setKras(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch KRAs", err);
+      setKras([]);
+    } finally {
+      setIsLoadingKRAs(false);
+    }
+  };
+
 
   const fetchCurrentUser = async () => {
     try {
@@ -278,6 +345,22 @@ export function KRADashboard() {
   const [isLoadingCurrentUser, setIsLoadingCurrentUser] = useState(true);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("my-kra"); // Default to my-kra for non-admin users
+
+  // Close quick action modals when leaving dashboard tab
+  useEffect(() => {
+    if (activeTab !== 'home') {
+      setCreateUserOpen(false);
+      setCreateDeptOpen(false);
+    }
+  }, [activeTab]);
+
+  // Close quick action modals when leaving dashboard tab
+  useEffect(() => {
+    if (activeTab !== 'home') {
+      setCreateUserOpen(false);
+      setCreateDeptOpen(false);
+    }
+  }, [activeTab]);
   const [notifications, setNotifications] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -298,15 +381,13 @@ export function KRADashboard() {
   const [isLoadingKRAs, setIsLoadingKRAs] = useState(true);
   const [createKRAOpen, setCreateKRAOpen] = useState(false);
   const [newKRA, setNewKRA] = useState<NewKRA>({
-    title: "",
     responsibilityAreas: "",
     department: "",
     assignedTo: "",
     startDate: "",
     endDate: "",
-    description: "",
-    priority: "medium",
   });
+  // ...existing code...
   
   // System health state
   const [systemHealth, setSystemHealth] = useState<any>(null);
@@ -511,6 +592,8 @@ export function KRADashboard() {
                     <DashboardOverview
                       users={users}
                       departments={departments}
+                      kras={kras}
+                      dailyTasks={dailyTasks}
                       systemHealth={systemHealth}
                       isLoadingSystemHealth={isLoadingSystemHealth}
                       onCreateUser={() => setCreateUserOpen(true)}
@@ -640,6 +723,9 @@ export function KRADashboard() {
                         />
                       </motion.div>
                     )}
+
+                    {/* Daily Task Management section */}
+                    {/* You can add DailyTaskManagement here if needed, but 'daily-task' is not a valid view anymore */}
 
                   </TabsContent>
                 )}

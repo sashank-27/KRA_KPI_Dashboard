@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { getApiBaseUrl } from "@/lib/api";
+import { getAuthHeaders } from "@/lib/auth";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import {
   Users,
@@ -31,8 +33,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Department } from "@/lib/types";
 
 interface DashboardOverviewProps {
+  todayUsers?: any[];
+  todayDepartments?: any[];
+  todayKras?: any[];
+  todayDailyTasks?: any[];
   users: User[];
   departments: Department[];
+  kras: any[];
+  dailyTasks: any[];
+  lastMonthUsers?: User[];
+  lastMonthDepartments?: Department[];
+  lastMonthKras?: any[];
   systemHealth: any;
   isLoadingSystemHealth: boolean;
   onCreateUser: () => void;
@@ -40,13 +51,61 @@ interface DashboardOverviewProps {
 }
 
 export function DashboardOverview({
+  todayUsers = [],
+  todayDepartments = [],
+  todayKras = [],
+  todayDailyTasks = [],
   users,
   departments,
+  kras,
+  dailyTasks: initialDailyTasks,
+  lastMonthUsers = [],
+  lastMonthDepartments = [],
+  lastMonthKras = [],
   systemHealth,
   isLoadingSystemHealth,
   onCreateUser,
   onCreateDepartment,
 }: DashboardOverviewProps) {
+  // Real-time daily tasks state
+  const [dailyTasks, setDailyTasks] = useState(initialDailyTasks || []);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch daily tasks from backend
+  const fetchDailyTasks = async () => {
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks?limit=20`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch daily tasks");
+      const data = await res.json();
+      setDailyTasks(Array.isArray(data.tasks) ? data.tasks : []);
+    } catch (err) {
+      setDailyTasks([]);
+    }
+  };
+
+  // Poll for real-time updates every 10 seconds
+  useEffect(() => {
+    fetchDailyTasks();
+    pollingRef.current = setInterval(fetchDailyTasks, 10000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  // Recently added tasks (last 3)
+  const recentTasks = dailyTasks
+    .filter((task) => !!task.createdAt)
+    .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+    .slice(0, 3);
+
+  // Recently escalated tasks (last 3)
+  const recentEscalatedTasks = dailyTasks
+    .filter((task) => task.isEscalated && !!task.escalatedAt)
+    .sort((a, b) => new Date(b.escalatedAt!).getTime() - new Date(a.escalatedAt!).getTime())
+    .slice(0, 3);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -56,6 +115,20 @@ export function DashboardOverview({
   // Calculate statistics
   const totalUsers = users.length;
   const totalDepartments = departments.length;
+  const totalKRAs = kras.length;
+  const totalDailyTasks = dailyTasks.length;
+  // Last month stats
+  const lastMonthUsersCount = lastMonthUsers.length;
+  const lastMonthDepartmentsCount = lastMonthDepartments.length;
+  const lastMonthKrasCount = lastMonthKras.length;
+  // Percentage change helpers
+  function getPercentChange(current: number, last: number) {
+    if (last === 0) return current === 0 ? 0 : 100;
+    return Math.round(((current - last) / last) * 100);
+  }
+  const usersChange = getPercentChange(totalUsers, lastMonthUsersCount);
+  const departmentsChange = getPercentChange(totalDepartments, lastMonthDepartmentsCount);
+  const krasChange = getPercentChange(totalKRAs, lastMonthKrasCount);
   const totalMembers = departments.reduce(
     (sum, dept) => sum + (typeof dept.members === "number" ? dept.members : 0),
     0
@@ -97,35 +170,31 @@ export function DashboardOverview({
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      change: "+12%",
-      changeType: "positive" as const,
+      dailyCount: todayUsers.length,
     },
     {
-      title: "Departments",
+      title: "Total Departments",
       value: totalDepartments,
       icon: Building2,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      change: "+2",
-      changeType: "positive" as const,
+      dailyCount: todayDepartments.length,
     },
     {
-      title: "Total Members",
-      value: totalMembers,
-      icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      change: "+8%",
-      changeType: "positive" as const,
+      title: "Total KRAs",
+      value: totalKRAs,
+      icon: BarChart3,
+      color: "text-pink-600",
+      bgColor: "bg-pink-50",
+      dailyCount: todayKras.length,
     },
     {
-      title: "Active Projects",
-      value: totalProjects,
+      title: "Total Daily Tasks",
+      value: totalDailyTasks,
       icon: Activity,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      change: "+3",
-      changeType: "positive" as const,
+      dailyCount: todayDailyTasks.length,
     },
   ];
 
@@ -166,21 +235,6 @@ export function DashboardOverview({
                       {stat.title}
                     </p>
                     <p className="text-3xl font-bold">{stat.value}</p>
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant={
-                          stat.changeType === "positive"
-                            ? "default"
-                            : "destructive"
-                        }
-                        className="text-xs"
-                      >
-                        {stat.change}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        from last month
-                      </span>
-                    </div>
                   </div>
                   <div className={`p-3 rounded-2xl ${stat.bgColor}`}>
                     <stat.icon className={`h-6 w-6 ${stat.color}`} />
@@ -273,8 +327,8 @@ export function DashboardOverview({
         </motion.div>
       </div>
 
-      {/* Recent Activity and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Recent Activity, Tasks, and System Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Recent Users */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -321,7 +375,40 @@ export function DashboardOverview({
           </Card>
         </motion.div>
 
-        {/* Quick Actions */}
+        {/* Recent Tasks */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.45 }}
+        >
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Recent Tasks
+              </CardTitle>
+              <CardDescription>
+                Most recently created daily tasks
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recentTasks.length === 0 ? (
+                <div className="text-muted-foreground text-sm">No recent tasks</div>
+              ) : (
+                recentTasks.map((task, idx) => (
+                  <div key={task._id || idx} className="flex flex-col gap-1 border-b last:border-b-0 pb-2">
+                    <span className="font-medium">{task.task}</span>
+                    <span className="text-xs text-muted-foreground">SR-ID: {task.srId}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(task.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">By: {typeof task.user === 'string' ? task.user : task.user?.name}</span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Recent Escalated */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -330,42 +417,26 @@ export function DashboardOverview({
           <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Quick Actions
+                <AlertCircle className="h-5 w-5" />
+                Recent Escalated
               </CardTitle>
-              <CardDescription>Common management tasks</CardDescription>
+              <CardDescription>
+                Most recently escalated daily tasks
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                className="w-full justify-start rounded-xl"
-                variant="outline"
-                onClick={onCreateUser}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add New User
-              </Button>
-              <Button
-                className="w-full justify-start rounded-xl"
-                variant="outline"
-                onClick={onCreateDepartment}
-              >
-                <Building className="mr-2 h-4 w-4" />
-                Create Department
-              </Button>
-              <Button
-                className="w-full justify-start rounded-xl"
-                variant="outline"
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Meeting
-              </Button>
-              <Button
-                className="w-full justify-start rounded-xl"
-                variant="outline"
-              >
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Generate Report
-              </Button>
+            <CardContent className="space-y-4">
+              {recentEscalatedTasks.length === 0 ? (
+                <div className="text-muted-foreground text-sm">No recent escalations</div>
+              ) : (
+                recentEscalatedTasks.map((task, idx) => (
+                  <div key={task._id || idx} className="flex flex-col gap-1 border-b last:border-b-0 pb-2">
+                    <span className="font-medium">{task.task}</span>
+                    <span className="text-xs text-muted-foreground">SR-ID: {task.srId}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(task.escalatedAt)}</span>
+                    <span className="text-xs text-muted-foreground">Escalated By: {typeof task.escalatedBy === 'string' ? task.escalatedBy : task.escalatedBy?.name}</span>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </motion.div>
