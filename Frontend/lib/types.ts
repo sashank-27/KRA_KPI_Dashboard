@@ -78,6 +78,7 @@ export interface DailyTask {
   originalUser?: string | { _id: string; name: string; email: string };
   createdAt?: string;
   updatedAt?: string;
+  closedAt?: string;
 }
 
 export interface NewDailyTask {

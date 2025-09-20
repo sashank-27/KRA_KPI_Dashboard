@@ -1,3 +1,22 @@
+// Calculate duration between two dates: hours if same day, days if not
+export function getTaskDuration(start: string | Date, end: string | Date): string {
+  if (!start || !end) return "-";
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return "-";
+  const sameDay = startDate.toDateString() === endDate.toDateString();
+  const diffMs = endDate.getTime() - startDate.getTime();
+  if (diffMs < 0) return "-";
+  if (sameDay) {
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours === 0) return `${minutes} min`;
+    return `${hours} hr${hours > 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} min` : ''}`;
+  } else {
+    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return `${days} day${days > 1 ? 's' : ''}`;
+  }
+}
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 

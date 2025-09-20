@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTaskDuration } from "@/lib/utils";
 import {
   ClipboardList,
   Plus,
@@ -629,6 +629,9 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
                     Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -717,11 +720,21 @@ export function DailyTaskManagement({ departments, users }: DailyTaskManagementP
                       </div>
                     </td>
                     
+
                     {/* Date */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500">
                         <Calendar className="h-4 w-4 mr-1" />
                         {task.date ? new Date(task.date).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </td>
+
+                    {/* Duration */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-900">
+                        {task.status === 'closed' && task.closedAt && task.createdAt
+                          ? getTaskDuration(task.createdAt, task.closedAt)
+                          : '-'}
                       </div>
                     </td>
                     

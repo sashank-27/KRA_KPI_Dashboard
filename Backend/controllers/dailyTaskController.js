@@ -57,6 +57,7 @@ const getAllDailyTasks = async (req, res) => {
     }
     
     const tasks = await DailyTask.find(query)
+      .select('+createdAt +closedAt')
       .populate({
         path: "user",
         select: "name email",
@@ -368,9 +369,17 @@ const updateDailyTaskStatus = async (req, res) => {
       return res.status(400).json({ error: "Invalid status" });
     }
 
+    // Prepare update object
+    let updateData = { status };
+    if (status === "closed") {
+      updateData.closedAt = new Date();
+    } else if (status === "in-progress") {
+      updateData.closedAt = null;
+    }
+
     const updatedTask = await DailyTask.findByIdAndUpdate(
       id,
-      { status },
+      updateData,
       { new: true, runValidators: true }
     )
       .populate("user", "name email")

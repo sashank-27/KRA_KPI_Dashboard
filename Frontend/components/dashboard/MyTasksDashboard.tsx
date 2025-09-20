@@ -1,7 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTaskDuration } from "@/lib/utils";
+  // Get task duration (for closed tasks)
+  const getTaskDurationDisplay = (task: DailyTask) => {
+    if (task.status !== 'closed' || !task.closedAt || !task.createdAt) return null;
+    return getTaskDuration(task.createdAt, task.closedAt);
+  };
 import {
   ClipboardList,
   Plus,
@@ -566,6 +571,17 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                           {formatDate(task.date).split(',')[0]}
                         </p>
                       </div>
+                      {task.status === 'closed' && task.closedAt && task.createdAt && (
+                        <div className="col-span-2 space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Clock className="h-4 w-4" />
+                            <span className="font-medium">Duration:</span>
+                          </div>
+                          <p className="text-sm text-gray-900">
+                            {getTaskDurationDisplay(task)}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Escalation Info */}

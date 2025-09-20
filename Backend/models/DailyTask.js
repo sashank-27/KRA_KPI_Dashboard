@@ -81,6 +81,10 @@ const DailyTaskSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    closedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
