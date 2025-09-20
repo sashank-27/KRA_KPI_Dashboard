@@ -75,13 +75,13 @@ const getSidebarItems = (isUserAdmin: boolean): SidebarItem[] => {
     });
     
     baseItems.push({
-      title: "Tasks",
+      title: "Tasks Dashboard",
       icon: <ClipboardList />,
       isActive: false,
     });
     
     baseItems.push({
-      title: "KPI",
+      title: "KPI Dashboard ",
       icon: <BarChart3 />,
       isActive: false,
     });
