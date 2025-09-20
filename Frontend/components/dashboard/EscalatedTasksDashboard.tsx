@@ -22,6 +22,14 @@ import { DailyTask, Department, User as UserType } from "@/lib/types";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
 import { useState, useEffect, useCallback } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   Select,
@@ -142,16 +150,22 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
   useSocketEvent(socket, 'task-status-updated', handleTaskStatusUpdated);
 
   // Rollback escalated task
-  const handleRollbackTask = async (task: DailyTask) => {
-    if (!confirm("Are you sure you want to rollback this escalated task?")) return;
+  const [rollbackDialogOpen, setRollbackDialogOpen] = useState(false);
+  const [taskToRollback, setTaskToRollback] = useState<DailyTask | null>(null);
 
+  const handleRollbackTask = (task: DailyTask) => {
+    setTaskToRollback(task);
+    setRollbackDialogOpen(true);
+  };
+
+  const confirmRollbackTask = async () => {
+    if (!taskToRollback) return;
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${task._id}/rollback`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${taskToRollback._id}/rollback`, {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: "include",
       });
-      
       if (!res.ok) {
         if (res.status === 401) {
           requireAuth();
@@ -160,8 +174,8 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed to rollback task: ${res.status} ${res.statusText}`);
       }
-      
-      // Refresh tasks to show updated data
+      setRollbackDialogOpen(false);
+      setTaskToRollback(null);
       fetchEscalatedTasks();
     } catch (err) {
       console.error("Failed to rollback task", err);
@@ -414,15 +428,49 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
                         
                         return canRollback;
                       })() && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRollbackTask(task)}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                        >
-                          <ArrowDownLeft className="h-4 w-4 mr-1" />
-                          Rollback
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRollbackTask(task)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <ArrowDownLeft className="h-4 w-4 mr-1" />
+                            Rollback
+                          </Button>
+                          {/* Rollback Confirmation Dialog */}
+                          <Dialog open={rollbackDialogOpen} onOpenChange={setRollbackDialogOpen}>
+                            <DialogContent className="max-w-md">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <ArrowDownLeft className="h-6 w-6 text-blue-600" />
+                                  Rollback Escalated Task
+                                </DialogTitle>
+                                <DialogDescription>
+                                  <>
+                                    <span className="block text-base font-medium text-gray-900">Are you sure you want to rollback this escalated task?</span>
+                                    <span className="block text-sm text-gray-500 text-center">This will transfer the task back to you and remove escalation details. This action cannot be undone.</span>
+                                    {taskToRollback && (
+                                      <span className="block w-full mt-3 p-3 rounded-xl bg-blue-50 border border-blue-200">
+                                        <span className="block font-semibold text-blue-800">{taskToRollback.task}</span>
+                                        <span className="block text-xs text-gray-600">SR-ID: {taskToRollback.srId}</span>
+                                        <span className="block text-xs text-gray-600">Remarks: {taskToRollback.remarks}</span>
+                                      </span>
+                                    )}
+                                  </>
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setRollbackDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={confirmRollbackTask} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                  Rollback Task
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </>
                       )}
                       {activeTab === "escalated-to-me" && (
                         <Badge variant="outline" className="text-orange-600 border-orange-200">

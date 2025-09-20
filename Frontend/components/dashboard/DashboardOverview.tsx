@@ -209,7 +209,7 @@ export function DashboardOverview({
       >
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold">Welcome to Dashboard</h1>
+            <h1 className="text-4xl font-bold">Admin Dashboard</h1>
             <p className="max-w-[600px] text-white/80 text-lg">
               Monitor your organization's performance, manage departments, and
               track user activities all in one place.

@@ -39,11 +39,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
+  DialogFooter,
   DialogTitle,
-  DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -324,32 +323,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   };
 
   // Rollback escalated task
-  const handleRollbackTask = async (task: DailyTask) => {
-    if (!confirm("Are you sure you want to rollback this escalated task?")) return;
-
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/${task._id}/rollback`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        if (res.status === 401) {
-          requireAuth();
-          return;
-        }
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to rollback task: ${res.status} ${res.statusText}`);
-      }
-      
-      // Refresh tasks to show updated data
-      fetchUserTasks();
-    } catch (err) {
-      console.error("Failed to rollback task", err);
-      alert(`Failed to rollback task: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
+// ...existing code...
 
   // Filter tasks
   const filteredTasks = tasks.filter((task) => {
@@ -683,13 +657,14 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleRollbackTask(task)}
+                                // onClick for rollback removed, add your logic here if needed
                                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
                               >
                                 <ArrowDownLeft className="h-4 w-4 mr-1" />
                                 Rollback
                               </Button>
                             )}
+// ...existing code...
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Badge variant="outline" className="text-orange-600 border-orange-200 cursor-help">

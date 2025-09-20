@@ -69,19 +69,19 @@ const getSidebarItems = (isUserAdmin: boolean): SidebarItem[] => {
   // Add admin-only items
   if (isUserAdmin) {
     baseItems.unshift({
-      title: "Dashboard",
+      title: "Admin Dashboard",
       icon: <Home />,
       isActive: false,
     });
     
     baseItems.push({
-      title: "Tasks Dashboard",
+      title: "Tasks",
       icon: <ClipboardList />,
       isActive: false,
     });
     
     baseItems.push({
-      title: "KPI Dashboard",
+      title: "KPI",
       icon: <BarChart3 />,
       isActive: false,
     });
@@ -177,7 +177,7 @@ export function Sidebar({
                   <Wand2 className="size-5" />
                 </div>
                 <div>
-                  <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                  <h2 className="font-semibold">Admin Dashboard</h2>
                   <p className="text-xs text-muted-foreground">Performance Management</p>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export function Sidebar({
                 <Wand2 className="size-5" />
               </div>
               <div>
-                <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                <h2 className="font-semibold">Admin Dashboard</h2>
                 <p className="text-xs text-muted-foreground">Performance Management</p>
               </div>
             </div>
@@ -392,7 +392,7 @@ export function Sidebar({
                 <Wand2 className="size-5" />
               </div>
               <div>
-                <h2 className="font-semibold">KRA & KPI Dashboard</h2>
+                <h2 className="font-semibold">Admin Dashboard</h2>
                 <p className="text-xs text-muted-foreground">Performance Management</p>
               </div>
             </div>
@@ -412,17 +412,17 @@ export function Sidebar({
                   <button
                     className={cn(
                       "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium",
-                      (item.title === "Dashboard" && activeTab === "home") || 
+                      (item.title === "Admin Dashboard" && activeTab === "home") || 
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
                       (item.title === "Escalated" && activeTab === "escalated-tasks") ||
-                      (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
-                      (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
+                      (item.title === "Tasks" && activeTab === "tasks-dashboard") ||
+                      (item.title === "KPI" && activeTab === "kpi-dashboard") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
                     onClick={() => {
-                      if (item.title === "Dashboard") {
+                      if (item.title === "Admin Dashboard") {
                         setActiveTab("home")
                       } else if (item.title === "My KRA") {
                         setActiveTab("my-kra")
@@ -430,9 +430,9 @@ export function Sidebar({
                         setActiveTab("my-tasks")
                       } else if (item.title === "Escalated") {
                         setActiveTab("escalated-tasks")
-                      } else if (item.title === "Tasks Dashboard") {
+                      } else if (item.title === "Tasks") {
                         setActiveTab("tasks-dashboard")
-                      } else if (item.title === "KPI Dashboard") {
+                      } else if (item.title === "KPI") {
                         setActiveTab("kpi-dashboard")
                       } else if (item.items) {
                         toggleExpanded(item.title)
