@@ -28,7 +28,8 @@ import { EscalatedTasksDashboard } from "@/components/dashboard/EscalatedTasksDa
 import { RealTimeTaskDashboard } from "@/components/dashboard/RealTimeTaskDashboard";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { Sidebar } from "@/components/sidebar/Sidebar";
-import KPIDashboard from "@/app/kpi/page";
+import dynamic from 'next/dynamic';
+const KPIDashboard = dynamic(() => import('@/app/kpi/page'), { ssr: false });
 import { getApiBaseUrl } from "@/lib/api";
 
 export function KRADashboard() {

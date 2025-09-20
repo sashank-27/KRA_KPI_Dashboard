@@ -81,7 +81,7 @@ const getSidebarItems = (isUserAdmin: boolean): SidebarItem[] => {
     });
     
     baseItems.push({
-      title: "KPI Dashboard ",
+      title: "KPI Dashboard",
       icon: <BarChart3 />,
       isActive: false,
     });
@@ -263,7 +263,7 @@ export function Sidebar({
                   <button
                     className={cn(
                       "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium",
-                      (item.title === "Dashboard" && activeTab === "home") || 
+                      (item.title === "Admin Dashboard" && activeTab === "home") || 
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
                       (item.title === "Escalated" && activeTab === "escalated-tasks") ||
@@ -273,7 +273,7 @@ export function Sidebar({
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
                     onClick={() => {
-                      if (item.title === "Dashboard") {
+                      if (item.title === "Admin Dashboard") {
                         setActiveTab("home")
                         setMobileMenuOpen(false)
                       } else if (item.title === "My KRA") {
@@ -416,8 +416,8 @@ export function Sidebar({
                       (item.title === "My KRA" && activeTab === "my-kra") ||
                       (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
                       (item.title === "Escalated" && activeTab === "escalated-tasks") ||
-                      (item.title === "Tasks" && activeTab === "tasks-dashboard") ||
-                      (item.title === "KPI" && activeTab === "kpi-dashboard") ||
+                      (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
+                      (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
@@ -430,9 +430,9 @@ export function Sidebar({
                         setActiveTab("my-tasks")
                       } else if (item.title === "Escalated") {
                         setActiveTab("escalated-tasks")
-                      } else if (item.title === "Tasks") {
+                      } else if (item.title === "Tasks Dashboard") {
                         setActiveTab("tasks-dashboard")
-                      } else if (item.title === "KPI") {
+                      } else if (item.title === "KPI Dashboard") {
                         setActiveTab("kpi-dashboard")
                       } else if (item.items) {
                         toggleExpanded(item.title)
