@@ -74,6 +74,15 @@ interface RealTimeTaskDashboardProps {
 
 export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashboardProps) {
   const [tasks, setTasks] = useState<DailyTask[]>([]);
+  // Map of SR-ID to array of users (for multi-user indication)
+  const srIdToUsers: Record<string, Set<string>> = {};
+  tasks.forEach(task => {
+    if (task.srId) {
+      const userId = typeof task.user === 'object' ? task.user?._id : task.user;
+      if (!srIdToUsers[task.srId]) srIdToUsers[task.srId] = new Set();
+      if (userId) srIdToUsers[task.srId].add(userId);
+    }
+  });
   // Get current user from JWT
   const currentUser = (() => {
     if (typeof window !== 'undefined') {
@@ -1088,10 +1097,35 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                           </div>
                         </td>
                         
-                        {/* SR ID */}
+                        {/* SR ID with multi-user indication */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-900 font-mono">
+                          <span className="text-sm text-gray-900 font-mono flex items-center gap-1">
                             {task.srId || 'N/A'}
+                            {task.srId && srIdToUsers[task.srId] && srIdToUsers[task.srId].size > 1 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-1 text-amber-600 flex items-center cursor-pointer">
+                                    <Users className="h-4 w-4 mr-0.5" />
+                                    <span className="text-xs font-semibold">Multi-user</span>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <span>
+                                    This Task was handling by <br />
+                                    <ul className="mt-1 ml-2 list-disc text-xs text-gray-800">
+                                      {Array.from(srIdToUsers[task.srId]).map((userId) => {
+                                        const userObj = users.find(u => u._id === userId);
+                                        return (
+                                          <li key={userId} className="mb-0.5">
+                                            {userObj ? `${userObj.name || userObj.email}` : userId}
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </span>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </span>
                         </td>
                         
