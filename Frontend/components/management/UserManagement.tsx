@@ -278,16 +278,7 @@ export function UserManagement({
 
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">All users</h2>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="rounded-2xl">
-              <PanelLeft className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-2xl">
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              Sort
-            </Button>
-          </div>
+          {/* Removed Filter and Sort buttons */}
         </div>
 
         <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">

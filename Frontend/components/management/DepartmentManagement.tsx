@@ -207,7 +207,7 @@ export function DepartmentManagement({
 
   return (
     <>
-      <section>
+      <section className="space-y-4 mt-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -232,18 +232,11 @@ export function DepartmentManagement({
         </motion.div>
       </section>
 
-      <section className="space-y-4">
+  <section className="space-y-4 mt-10">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">All Departments</h2>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="rounded-2xl">
-              <PanelLeft className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-2xl">
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              Sort
-            </Button>
+            {/* Removed Filter and Sort buttons */}
           </div>
         </div>
 
