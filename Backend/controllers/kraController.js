@@ -114,6 +114,13 @@ const createKRA = async (req, res) => {
       .populate("assignedTo", "name email")
       .populate("createdBy", "name email");
 
+    // Emit websocket event to all admins and the assigned user
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('kra-created', populatedKRA);
+      io.to(`user-${assignedTo}`).emit('kra-created', populatedKRA);
+    }
+
     res.status(201).json(populatedKRA);
   } catch (error) {
     console.error("Error creating KRA:", error);
@@ -155,6 +162,13 @@ const updateKRA = async (req, res) => {
       return res.status(404).json({ error: "KRA not found" });
     }
 
+    // Emit websocket event to all admins and the assigned user
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('kra-updated', updatedKRA);
+      io.to(`user-${updatedKRA.assignedTo?._id || updatedKRA.assignedTo}`).emit('kra-updated', updatedKRA);
+    }
+
     res.json(updatedKRA);
   } catch (error) {
     console.error("Error updating KRA:", error);
@@ -171,6 +185,13 @@ const deleteKRA = async (req, res) => {
 
     if (!deletedKRA) {
       return res.status(404).json({ error: "KRA not found" });
+    }
+
+    // Emit websocket event to all admins and the assigned user
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('kra-deleted', { _id: id });
+      io.to(`user-${deletedKRA.assignedTo?._id || deletedKRA.assignedTo}`).emit('kra-deleted', { _id: id });
     }
 
     res.json({ message: "KRA deleted successfully" });

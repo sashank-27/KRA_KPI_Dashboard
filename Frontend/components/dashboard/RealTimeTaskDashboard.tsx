@@ -110,8 +110,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
   });
   const [isConnected, setIsConnected] = useState(false);
   const [realtimeEnabled, setRealtimeEnabled] = useState(true);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [showActivity, setShowActivity] = useState(true);
+  // Removed recentActivity and showActivity state (Live Activity feature removed)
   const socketRef = useRef<Socket | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
@@ -132,7 +131,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
     if (realtimeEnabled) {
       console.log("Initializing WebSocket connection...");
       
-  const socket = io(getApiBaseUrl(), {
+        const socket = io(getApiBaseUrl(), {
         withCredentials: true,
         transports: ['websocket', 'polling'],
         timeout: 20000,
@@ -199,12 +198,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
           }
           return [task, ...prev];
         });
-        setRecentActivity(prev => [{
-          type: "new",
-          task,
-          timestamp: new Date(),
-          message: `New task created: ${task.task || 'Untitled task'}`
-        }, ...prev.slice(0, 9)]);
+        // Live Activity: setRecentActivity removed
         setLastUpdate(new Date());
       });
 
@@ -220,24 +214,14 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
             return [task, ...prev];
           }
         });
-        setRecentActivity(prev => [{
-          type: "update",
-          task,
-          timestamp: new Date(),
-          message: `Task updated: ${task.task || 'Untitled task'}`
-        }, ...prev.slice(0, 9)]);
+        // Live Activity: setRecentActivity removed
         setLastUpdate(new Date());
       });
 
       socket.on("task-deleted", (data: { id: string }) => {
         console.log("Task deleted:", data.id);
         setTasks(prev => prev.filter(t => t._id !== data.id));
-        setRecentActivity(prev => [{
-          type: "delete",
-          taskId: data.id,
-          timestamp: new Date(),
-          message: `Task deleted: ${data.id}`
-        }, ...prev.slice(0, 9)]);
+        // Live Activity: setRecentActivity removed
         setLastUpdate(new Date());
       });
 
@@ -253,12 +237,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
             return [task, ...prev];
           }
         });
-        setRecentActivity(prev => [{
-          type: "status",
-          task,
-          timestamp: new Date(),
-          message: `Status updated to ${task.status || 'in-progress'}: ${task.task || 'Untitled task'}`
-        }, ...prev.slice(0, 9)]);
+        // Live Activity: setRecentActivity removed
         setLastUpdate(new Date());
       });
 
@@ -290,12 +269,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
             return [task, ...prev];
           }
         });
-        setRecentActivity(prev => [{
-          type: "escalate",
-          task,
-          timestamp: new Date(),
-          message: `Task escalated: ${task.task || 'Untitled task'}`
-        }, ...prev.slice(0, 9)]);
+        // Live Activity: setRecentActivity removed
         setLastUpdate(new Date());
       });
 
@@ -799,7 +773,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <h2 className="text-3xl font-bold">Tasks Dashboard</h2>
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   {isConnected ? (
                     <Wifi className="h-5 w-5 text-green-300" />
                   ) : (
@@ -808,12 +782,12 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                   <span className="text-sm text-white/80">
                     {isConnected ? "Connected" : "Disconnected"}
                   </span>
-                </div>
+                </div> */}
               </div>
               <p className="max-w-[600px] text-white/80">
                 Monitor and manage daily tasks submitted by users across all departments with real-time updates.
               </p>
-              <div className="flex items-center gap-4 text-sm">
+              {/* <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4" />
                   <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
@@ -826,17 +800,10 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
                     onCheckedChange={setRealtimeEnabled}
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="rounded-2xl bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
-                onClick={() => setShowActivity(!showActivity)}
-              >
-                {showActivity ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                {showActivity ? "Hide" : "Show"} Activity
-              </Button>
+              {/* Live Activity toggle button removed */}
               <Button
                 className="rounded-2xl bg-white text-emerald-700 hover:bg-white/90 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
                 onClick={() => setCreateTaskOpen(true)}
@@ -849,9 +816,9 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
         </motion.div>
       </section>
 
-      <div className={`grid grid-cols-1 gap-6 transition-all duration-500 ease-in-out ${showActivity ? 'lg:grid-cols-4' : 'lg:grid-cols-1'}`}>
+      <div className="grid grid-cols-1 gap-6 transition-all duration-500 ease-in-out">
         {/* Statistics Cards */}
-        <div className={`space-y-6 transition-all duration-500 ease-in-out ${showActivity ? 'lg:col-span-3' : 'lg:col-span-1'}`}>
+        <div className="space-y-6 transition-all duration-500 ease-in-out">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1317,70 +1284,7 @@ export function RealTimeTaskDashboard({ departments, users }: RealTimeTaskDashbo
           </div>
         </div>
 
-        {/* Real-time Activity Feed */}
-        <motion.div
-          className="lg:col-span-1"
-          initial={false}
-          animate={{
-            opacity: showActivity ? 1 : 0,
-            scale: showActivity ? 1 : 0.95,
-            x: showActivity ? 0 : 20
-          }}
-          transition={{
-            duration: 0.4,
-            ease: "easeInOut"
-          }}
-          style={{
-            display: showActivity ? 'block' : 'none'
-          }}
-        >
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="bg-white rounded-2xl border shadow-sm h-full"
-            >
-              <div className="p-6 border-b">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-emerald-600" />
-                  <h3 className="text-lg font-semibold">Live Activity</h3>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">Real-time task updates</p>
-              </div>
-              
-              <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-                <AnimatePresence>
-                  {recentActivity.length > 0 ? recentActivity.map((activity, idx) => (
-                    <motion.div
-                      key={`${activity.timestamp.getTime()}-${idx}`}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {activity.message}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {activity.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )) : (
-                    <div className="text-center text-gray-500 py-8">
-                      <Activity className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No recent activity</p>
-                    </div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-        </motion.div>
+        {/* Live Activity section removed */}
       </div>
 
       <DailyTaskModal

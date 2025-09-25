@@ -22,7 +22,8 @@ import { Input } from "@/components/ui/input";
 import { KRA } from "@/lib/types";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   Select,
   SelectContent,
@@ -42,45 +43,64 @@ export function MyKRADashboard({ currentUserId }: MyKRADashboardProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  // Fetch user's KRAs
-  useEffect(() => {
-    fetchUserKRAs();
-  }, [currentUserId]);
+  // WebSocket setup
+  const { socket, isConnected } = useSocket();
 
-  const fetchUserKRAs = async () => {
+  // Fetch user's KRAs
+  const fetchUserKRAs = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log("Fetching KRAs for currentUserId:", currentUserId);
-      
       if (!currentUserId) {
-        console.error("No currentUserId provided");
         setKras([]);
         return;
       }
-      
       const res = await fetch(`${getApiBaseUrl()}/api/kras/user/${currentUserId}`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
-      
       if (!res.ok) {
         if (res.status === 401) {
-          console.log('Unauthorized access, redirecting to login');
           requireAuth();
           return;
         }
         throw new Error(`Failed to fetch KRAs: ${res.status} ${res.statusText}`);
       }
-      
       const data = await res.json();
       setKras(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch user KRAs", err);
       setKras([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUserId]);
+
+  // Join user room and fetch KRAs on mount/ID change
+  useEffect(() => {
+    fetchUserKRAs();
+    if (socket && currentUserId) {
+      socket.emit('join-user-room', currentUserId);
+    }
+    return () => {
+      if (socket && currentUserId) {
+        socket.emit('leave-user-room', currentUserId);
+      }
+    };
+  }, [socket, currentUserId, fetchUserKRAs]);
+
+  // Real-time KRA events
+  useSocketEvent(socket, 'kra-created', (kra) => {
+    if (kra.assignedTo && (kra.assignedTo._id === currentUserId || kra.assignedTo === currentUserId)) {
+      setKras((prev) => [kra, ...prev.filter(k => k._id !== kra._id)]);
+    }
+  });
+  useSocketEvent(socket, 'kra-updated', (kra) => {
+    if (kra.assignedTo && (kra.assignedTo._id === currentUserId || kra.assignedTo === currentUserId)) {
+      setKras((prev) => prev.map(k => k._id === kra._id ? kra : k));
+    }
+  });
+  useSocketEvent(socket, 'kra-deleted', ({ _id }) => {
+    setKras((prev) => prev.filter(k => k._id !== _id));
+  });
 
   // Filter KRAs based on search and filters
   const filteredKRAs = kras.filter((kra) => {

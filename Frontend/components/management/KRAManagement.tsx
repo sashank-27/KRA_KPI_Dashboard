@@ -24,7 +24,8 @@ import { KRA, NewKRA, Department, User as UserType } from "@/lib/types";
 import { getApiBaseUrl } from "@/lib/api";
 import { KRAModal } from "@/components/modals/KRAModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSocket, useSocketEvent } from "@/hooks/useSocket";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,34 +63,53 @@ export function KRAManagement({ departments, users }: KRAManagementProps) {
     endDate: "",
   });
 
-  // Fetch KRAs from backend
-  useEffect(() => {
-    fetchKRAs();
-  }, []);
+  // WebSocket setup
+  const { socket, isConnected } = useSocket();
 
-  const fetchKRAs = async () => {
+  // Fetch KRAs from backend
+  const fetchKRAs = useCallback(async () => {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/kras`, {
         headers: getAuthHeaders(),
         credentials: "include",
       });
-      
       if (!res.ok) {
         if (res.status === 401) {
-          console.log('Unauthorized access, redirecting to login');
           requireAuth();
           return;
         }
         throw new Error(`Failed to fetch KRAs: ${res.status} ${res.statusText}`);
       }
-      
       const data = await res.json();
       setKras(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch KRAs", err);
       setKras([]);
     }
-  };
+  }, []);
+
+  // Join admin room and fetch KRAs on mount
+  useEffect(() => {
+    fetchKRAs();
+    if (socket) {
+      socket.emit('join-admin-room');
+    }
+    return () => {
+      if (socket) {
+        socket.emit('leave-admin-room');
+      }
+    };
+  }, [socket, fetchKRAs]);
+
+  // Real-time KRA events
+  useSocketEvent(socket, 'kra-created', (kra) => {
+    setKras((prev) => [kra, ...prev.filter(k => k._id !== kra._id)]);
+  });
+  useSocketEvent(socket, 'kra-updated', (kra) => {
+    setKras((prev) => prev.map(k => k._id === kra._id ? kra : k));
+  });
+  useSocketEvent(socket, 'kra-deleted', ({ _id }) => {
+    setKras((prev) => prev.filter(k => k._id !== _id));
+  });
 
   // Create KRA
   const handleCreateKRA = async () => {

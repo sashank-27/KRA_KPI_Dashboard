@@ -400,12 +400,12 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
               <span className="text-2xl font-bold">{stats.total}</span>
               <span className="text-white/80">Total Tasks</span>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
               <span className="text-sm text-white/60">
                 {isConnected ? 'Real-time Connected' : 'Disconnected'}
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
       </motion.div>

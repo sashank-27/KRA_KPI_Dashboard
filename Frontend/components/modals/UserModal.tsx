@@ -5,6 +5,7 @@ import { ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Department } from "@/lib/types";
+import { useState } from "react";
 
 interface NewUser {
   username: string;
@@ -40,6 +41,9 @@ export function UserModal({
   editingUserId,
   isAdmin = false,
 }: UserModalProps) {
+  // Local state for reset password in edit mode
+  const [resetPassword, setResetPassword] = useState("");
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -177,10 +181,8 @@ export function UserModal({
                       type="password"
                       placeholder="Enter new password"
                       className="w-full text-black placeholder:text-gray-500"
-                      value={newUser.password}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, password: e.target.value })
-                      }
+                      value={resetPassword}
+                      onChange={(e) => setResetPassword(e.target.value)}
                     />
                   </div>
                   <div className="flex gap-2 justify-end pt-2">
@@ -188,12 +190,12 @@ export function UserModal({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        if (newUser.password && editingUserId) {
-                          onResetPassword(editingUserId, newUser.password);
-                          setNewUser({ ...newUser, password: "" });
+                        if (resetPassword && editingUserId) {
+                          onResetPassword(editingUserId, resetPassword);
+                          setResetPassword("");
                         }
                       }}
-                      disabled={!newUser.password}
+                      disabled={!resetPassword}
                     >
                       Reset Password
                     </Button>

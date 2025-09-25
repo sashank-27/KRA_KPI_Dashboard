@@ -98,11 +98,15 @@ export function UserManagement({
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed to reset password: ${res.status} ${res.statusText}`);
       }
-      
-      alert("Password reset successfully!");
+      // Use toast notification instead of alert
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', message: 'Password reset successfully!' } }));
+      }
     } catch (err) {
       console.error("Failed to reset password", err);
-      alert(`Failed to reset password: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', message: `Failed to reset password: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+      }
     }
   };
 
