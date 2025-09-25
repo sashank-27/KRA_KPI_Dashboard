@@ -438,7 +438,7 @@ export function KRADashboard() {
       <div
         className={cn(
           "min-h-screen transition-all duration-300 ease-in-out",
-          sidebarOpen ? "md:pl-64" : "md:pl-0"
+          sidebarOpen ? "md:pl-64" : "md:pl-20"
         )}
       >
         <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">

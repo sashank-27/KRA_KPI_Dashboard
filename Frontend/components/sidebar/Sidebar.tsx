@@ -381,49 +381,59 @@ export function Sidebar({
       {/* Sidebar - Desktop */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden w-64 transform border-r bg-background transition-transform duration-300 ease-in-out md:block",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          sidebarOpen
+            ? "fixed inset-y-0 left-0 z-30 hidden w-64 transform border-r bg-background transition-all duration-300 ease-in-out md:block"
+            : "fixed inset-y-0 left-0 z-30 hidden w-20 transform border-r bg-background transition-all duration-300 ease-in-out md:block",
+          sidebarOpen ? "translate-x-0" : "translate-x-0"
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
-                <Wand2 className="size-5" />
-              </div>
+          <div className="p-4 flex items-center gap-3 justify-center">
+            <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+              <Wand2 className="size-5" />
+            </div>
+            {sidebarOpen && (
               <div>
                 <h2 className="font-semibold">Admin Dashboard</h2>
                 <p className="text-xs text-muted-foreground">Performance Management</p>
               </div>
-            </div>
+            )}
           </div>
 
-          <div className="px-3 py-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
+          {sidebarOpen && (
+            <div className="px-3 py-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
+              </div>
             </div>
-          </div>
+          )}
 
-          <ScrollArea className="flex-1 px-3 py-2">
+          <ScrollArea className={sidebarOpen ? "flex-1 px-3 py-2" : "flex-1 px-1 py-2"}>
             <div className="space-y-1">
               {sidebarItems.map((item) => (
                 <div key={item.title} className="mb-1">
                   <button
                     className={cn(
-                      "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium",
+                      sidebarOpen
+                        ? "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium"
+                        : "flex w-full items-center justify-center rounded-2xl p-2 text-xl",
                       (item.title === "Admin Dashboard" && activeTab === "home") || 
-                      (item.title === "My KRA" && activeTab === "my-kra") ||
-                      (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
-                      (item.title === "Escalated" && activeTab === "escalated-tasks") ||
-                      (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
-                      (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
-                      (item.title === "Management" && activeTab === "apps") 
+                        (item.title === "My KRA" && activeTab === "my-kra") ||
+                        (item.title === "Daily Tasks" && activeTab === "my-tasks") ||
+                        (item.title === "Escalated" && activeTab === "escalated-tasks") ||
+                        (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
+                        (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
+                        (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
                     onClick={() => {
                       if (item.title === "Admin Dashboard") {
-                        setActiveTab("home")
+                        if (!sidebarOpen) {
+                          setSidebarOpen(true);
+                        } else {
+                          setActiveTab("home");
+                        }
                       } else if (item.title === "My KRA") {
                         setActiveTab("my-kra")
                       } else if (item.title === "Daily Tasks") {
@@ -439,12 +449,12 @@ export function Sidebar({
                       }
                     }}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className={sidebarOpen ? "flex items-center gap-3" : "flex items-center justify-center"}>
                       {item.icon}
-                      <span>{item.title}</span>
+                      {sidebarOpen && <span>{item.title}</span>}
                     </div>
 
-                    {item.items && (
+                    {sidebarOpen && item.items && (
                       <ChevronDown
                         className={cn(
                           "ml-2 h-4 w-4 transition-transform",
@@ -454,7 +464,7 @@ export function Sidebar({
                     )}
                   </button>
 
-                  {item.items && expandedItems[item.title] && (
+                  {sidebarOpen && item.items && expandedItems[item.title] && (
                     <div className="mt-1 ml-6 space-y-1 border-l pl-3">
                       {item.items && item.items.map((subItem: SidebarSubItem) => (
                         <button
@@ -485,36 +495,38 @@ export function Sidebar({
             </div>
           </ScrollArea>
 
-          <div className="border-t p-3">
-            <div className="space-y-2">  
-              {/* New Profile Section */}
-              <div className="rounded-2xl bg-gradient-to-r from-purple-50 to-blue-50 p-3 dark:from-purple-950/20 dark:to-blue-950/20">
-                <button 
-                  className="flex w-full items-center gap-3 rounded-xl p-2 hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
-                  onClick={() => setActiveTab("profile")}
-                >
-                  <Avatar className="h-8 w-8 ring-2 ring-white dark:ring-gray-800">
-                    <AvatarImage src={currentUser?.avatar ?? ""} alt="User" />
-                    <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                      {(currentUser?.name ?? "")
-                        .split(' ')
-                        .filter(Boolean)
-                        .map(n => n[0])
-                        .join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {currentUser?.name ?? "User"}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {currentUser?.role ?? "user"}
-                    </p>
-                  </div>
-                </button>
+          {sidebarOpen && (
+            <div className="border-t p-3">
+              <div className="space-y-2">  
+                {/* New Profile Section */}
+                <div className="rounded-2xl bg-gradient-to-r from-purple-50 to-blue-50 p-3 dark:from-purple-950/20 dark:to-blue-950/20">
+                  <button 
+                    className="flex w-full items-center gap-3 rounded-xl p-2 hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
+                    onClick={() => setActiveTab("profile")}
+                  >
+                    <Avatar className="h-8 w-8 ring-2 ring-white dark:ring-gray-800">
+                      <AvatarImage src={currentUser?.avatar ?? ""} alt="User" />
+                      <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                        {(currentUser?.name ?? "")
+                          .split(' ')
+                          .filter(Boolean)
+                          .map(n => n[0])
+                          .join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {currentUser?.name ?? "User"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {currentUser?.role ?? "user"}
+                      </p>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>
