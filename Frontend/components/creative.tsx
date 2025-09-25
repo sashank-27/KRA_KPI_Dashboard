@@ -33,7 +33,6 @@ const KPIDashboard = dynamic(() => import('@/app/kpi/page'), { ssr: false });
 import { getApiBaseUrl } from "@/lib/api";
 
 export function KRADashboard() {
-  // ...existing code...
   const isMobile = useIsMobile();
   // Fetch all Daily Tasks (for total count)
   const fetchDailyTasks = async () => {
@@ -56,7 +55,6 @@ export function KRADashboard() {
     }
   };
   const [todayDailyTasks, setTodayDailyTasks] = useState<DailyTask[]>([]);
-  // ...existing code...
   // Daily Tasks state
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   // Fetch all Daily Tasks
@@ -388,7 +386,6 @@ export function KRADashboard() {
     startDate: "",
     endDate: "",
   });
-  // ...existing code...
   
   // System health state
   const [systemHealth, setSystemHealth] = useState<any>(null);
@@ -599,6 +596,7 @@ export function KRADashboard() {
                       isLoadingSystemHealth={isLoadingSystemHealth}
                       onCreateUser={() => setCreateUserOpen(true)}
                       onCreateDepartment={() => setCreateDeptOpen(true)}
+                      currentUserRole={currentUser?.role || ''}
                     />
                   </TabsContent>
                 )}

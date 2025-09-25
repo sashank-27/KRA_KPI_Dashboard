@@ -48,6 +48,7 @@ interface DashboardOverviewProps {
   isLoadingSystemHealth: boolean;
   onCreateUser: () => void;
   onCreateDepartment: () => void;
+  currentUserRole: string;
 }
 
 export function DashboardOverview({
@@ -66,6 +67,7 @@ export function DashboardOverview({
   isLoadingSystemHealth,
   onCreateUser,
   onCreateDepartment,
+  currentUserRole,
 }: DashboardOverviewProps) {
   // Real-time daily tasks state
   const [dailyTasks, setDailyTasks] = useState(initialDailyTasks || []);
@@ -328,7 +330,9 @@ export function DashboardOverview({
       </div>
 
       {/* Recent Activity, Tasks, and System Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div
+        className={`grid grid-cols-1 gap-6 ${currentUserRole === 'superadmin' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+      >
         {/* Recent Users */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -367,7 +371,7 @@ export function DashboardOverview({
                     </p>
                   </div>
                   <Badge variant="outline" className="text-xs">
-                    {user.joined}
+                    {formatDate(user.joined || "")}
                   </Badge>
                 </div>
               ))}
@@ -441,67 +445,69 @@ export function DashboardOverview({
           </Card>
         </motion.div>
 
-        {/* System Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                System Status
-              </CardTitle>
-              <CardDescription>
-                {isLoadingSystemHealth ? "Loading system health..." : 
-                 systemHealth ? `System ${systemHealth.status}${mounted ? ` - Last updated: ${formatRelativeTime(systemHealth.timestamp)}` : ''}` : 
-                 "System health unavailable"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoadingSystemHealth ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-2 text-sm text-muted-foreground">Loading system status...</span>
-                </div>
-              ) : systemHealth ? (
-                <>
-                  {Object.entries(systemHealth.services).map(([serviceName, service]: [string, any]) => {
-                    const isOnline = service.status === 'online';
-                    const isPending = service.status === 'pending';
-                    const Icon = isOnline ? CheckCircle : isPending ? AlertCircle : AlertCircle;
-                    const iconColor = isOnline ? 'text-green-500' : isPending ? 'text-yellow-500' : 'text-red-500';
-                    const badgeColor = isOnline ? 'bg-green-500' : isPending ? 'bg-yellow-500' : 'bg-red-500';
-                    const badgeVariant = isOnline ? 'default' : isPending ? 'secondary' : 'destructive';
-                    
-                    return (
-                      <div key={serviceName} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className={`h-4 w-4 ${iconColor}`} />
-                          <span className="text-sm capitalize">{serviceName.replace(/([A-Z])/g, ' $1').trim()}</span>
+        {/* System Status (Super Admin Only) */}
+        {currentUserRole === 'superadmin' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
+            <Card className="rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  System Status
+                </CardTitle>
+                <CardDescription>
+                  {isLoadingSystemHealth ? "Loading system health..." : 
+                    systemHealth ? `System ${systemHealth.status}${mounted ? ` - Last updated: ${formatRelativeTime(systemHealth.timestamp)}` : ''}` : 
+                    "System health unavailable"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoadingSystemHealth ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span className="ml-2 text-sm text-muted-foreground">Loading system status...</span>
+                  </div>
+                ) : systemHealth ? (
+                  <>
+                    {Object.entries(systemHealth.services).map(([serviceName, service]: [string, any]) => {
+                      const isOnline = service.status === 'online';
+                      const isPending = service.status === 'pending';
+                      const Icon = isOnline ? CheckCircle : isPending ? AlertCircle : AlertCircle;
+                      const iconColor = isOnline ? 'text-green-500' : isPending ? 'text-yellow-500' : 'text-red-500';
+                      const badgeColor = isOnline ? 'bg-green-500' : isPending ? 'bg-yellow-500' : 'bg-red-500';
+                      const badgeVariant = isOnline ? 'default' : isPending ? 'secondary' : 'destructive';
+                      
+                      return (
+                        <div key={serviceName} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${iconColor}`} />
+                            <span className="text-sm capitalize">{serviceName.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <Badge variant={badgeVariant} className={badgeColor}>
+                              {service.status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {service.message}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <Badge variant={badgeVariant} className={badgeColor}>
-                            {service.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground mt-1">
-                            {service.message}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Unable to load system status</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Unable to load system status</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </div>
   );

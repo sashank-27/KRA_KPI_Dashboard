@@ -328,7 +328,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   };
 
   // Rollback escalated task
-// ...existing code...
+
 
   // Filter tasks
   const filteredTasks = tasks.filter((task) => {
@@ -680,7 +680,6 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                                 Rollback
                               </Button>
                             )}
-// ...existing code...
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Badge variant="outline" className="text-orange-600 border-orange-200 cursor-help">

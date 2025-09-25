@@ -275,8 +275,8 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
             }`}
           >
             <div className="flex items-center justify-center gap-2">
-              <ArrowUpRight className="h-4 w-4" />
-              Escalated to Me ({escalatedTasks.length})
+              <ArrowDownLeft className="h-4 w-4" />
+              Escalated to you ({escalatedTasks.length})
             </div>
           </button>
           <button
@@ -288,8 +288,8 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
             }`}
           >
             <div className="flex items-center justify-center gap-2">
-              <ArrowDownLeft className="h-4 w-4" />
-              Escalated by Me ({escalatedByMe.length})
+              <ArrowUpRight className="h-4 w-4" />
+              Escalated by you ({escalatedByMe.length})
             </div>
           </button>
         </div>
@@ -393,7 +393,7 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
                       <div className="flex items-center gap-2 text-sm text-orange-700">
                         <ArrowUpRight className="h-4 w-4" />
                         <span className="font-medium">
-                          {activeTab === "escalated-to-me" ? "Escalated to me by:" : "Escalated by me to:"}
+                          {activeTab === "escalated-to-me" ? "Escalated to me by:" : "Escalated to:"}
                         </span>
                       </div>
                       <p className="text-sm text-orange-800">

@@ -325,486 +325,202 @@ export function ProfilePage({
         </div>
       </motion.div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 rounded-2xl">
-          <TabsTrigger value="overview" className="rounded-xl">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="rounded-xl">
-            Activity
-          </TabsTrigger>
-          <TabsTrigger value="achievements" className="rounded-xl">
-            Achievements
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-xl">
-            Settings
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Profile Information */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <Card className="rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Profile Information
-                  </CardTitle>
-                  <CardDescription>
-                    Your personal and professional details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Profile Picture Upload Section - Only show in edit mode */}
-                  {isEditing && (
-                    <div className="space-y-4">
-                      <Label>Profile Picture</Label>
-                      <div className="flex items-center gap-4">
-                        <div 
-                          className="relative cursor-pointer"
-                          onDragOver={handleDragOver}
-                          onDrop={handleDrop}
-                          onClick={handleCameraClick}
-                        >
-                          <Avatar className="h-16 w-16 border-2 border-dashed border-gray-300 hover:border-primary transition-colors">
-                            <AvatarImage
-                              src={previewImage || editedUser.avatar || currentUser.avatar || ""}
-                              alt={currentUser.name}
-                            />
-                            <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
-                              {(currentUser.name || "User")
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          {isUploadingImage && (
-                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-full transition-colors flex items-center justify-center">
-                            <Camera className="h-4 w-4 text-white opacity-0 hover:opacity-100 transition-opacity" />
+      {/* Overview Content (was inside TabsContent) */}
+      <div className="space-y-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Profile Information */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Profile Information
+                </CardTitle>
+                <CardDescription>
+                  Your personal and professional details
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Profile Picture Upload Section - Only show in edit mode */}
+                {isEditing && (
+                  <div className="space-y-4">
+                    <Label>Profile Picture</Label>
+                    <div className="flex items-center gap-4">
+                      <div 
+                        className="relative cursor-pointer"
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        onClick={handleCameraClick}
+                      >
+                        <Avatar className="h-16 w-16 border-2 border-dashed border-gray-300 hover:border-primary transition-colors">
+                          <AvatarImage
+                            src={previewImage || editedUser.avatar || currentUser.avatar || ""}
+                            alt={currentUser.name}
+                          />
+                          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
+                            {(currentUser.name || "User")
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isUploadingImage && (
+                          <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-full transition-colors flex items-center justify-center">
+                          <Camera className="h-4 w-4 text-white opacity-0 hover:opacity-100 transition-opacity" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex gap-2">
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCameraClick}
+                            disabled={isUploadingImage}
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            {isUploadingImage ? "Uploading..." : "Change Photo"}
+                          </Button>
+                          {previewImage && (
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={handleCameraClick}
-                              disabled={isUploadingImage}
+                              onClick={() => {
+                                setPreviewImage(null);
+                                setEditedUser({ ...editedUser, avatar: currentUser.avatar });
+                              }}
                             >
-                              <Camera className="h-4 w-4 mr-2" />
-                              {isUploadingImage ? "Uploading..." : "Change Photo"}
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
                             </Button>
-                            {previewImage && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setPreviewImage(null);
-                                  setEditedUser({ ...editedUser, avatar: currentUser.avatar });
-                                }}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Cancel
-                              </Button>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            JPG, PNG or GIF. Max size 5MB. Click avatar or drag & drop to upload.
-                          </p>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    {isEditing ? (
-                      <Input
-                        id="name"
-                        value={editedUser.name}
-                        onChange={(e) =>
-                          setEditedUser({ ...editedUser, name: e.target.value })
-                        }
-                        className="rounded-xl"
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{currentUser.name || "No name set"}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    {isEditing ? (
-                      <Input
-                        id="email"
-                        type="email"
-                        value={editedUser.email}
-                        onChange={(e) =>
-                          setEditedUser({
-                            ...editedUser,
-                            email: e.target.value,
-                          })
-                        }
-                        className="rounded-xl"
-                      />
-                    ) : (
-                      <p className="text-sm font-medium">{currentUser.email}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    {isEditing ? (
-                      <Select
-                        value={editedUser.department}
-                        onValueChange={(value) =>
-                          setEditedUser({ ...editedUser, department: value })
-                        }
-                      >
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Design">Design</SelectItem>
-                          <SelectItem value="Development">
-                            Development
-                          </SelectItem>
-                          <SelectItem value="Marketing">Marketing</SelectItem>
-                          <SelectItem value="Sales">Sales</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-sm font-medium">
-                        {currentUser.department}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    {isEditing ? (
-                      <Select
-                        value={editedUser.role}
-                        onValueChange={(value) =>
-                          setEditedUser({ ...editedUser, role: value })
-                        }
-                      >
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Manager">Manager</SelectItem>
-                          <SelectItem value="Member">Member</SelectItem>
-                          <SelectItem value="Intern">Intern</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-sm font-medium">{currentUser.role}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    {isEditing ? (
-                      <Textarea
-                        id="bio"
-                        value={editedUser.bio || ""}
-                        onChange={(e) =>
-                          setEditedUser({ ...editedUser, bio: e.target.value })
-                        }
-                        placeholder="Tell us about yourself..."
-                        className="rounded-xl"
-                        rows={3}
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {currentUser.bio || "No bio available"}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Statistics */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Card className="rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Performance Stats
-                  </CardTitle>
-                  <CardDescription>
-                    Your progress and achievements
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {stats.map((stat, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
-                          {stat.label}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {stat.value}/{stat.total}
-                        </span>
-                      </div>
-                      <Progress
-                        value={(stat.value / stat.total) * 100}
-                        className="h-2"
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Quick Info */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <Card className="rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Quick Info
-                  </CardTitle>
-                  <CardDescription>
-                    Important details at a glance
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Email</p>
-                      <p className="text-xs text-muted-foreground">
-                        {currentUser.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Department</p>
-                      <p className="text-xs text-muted-foreground">
-                        {currentUser.department}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Joined</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(currentUser.joined || "")}
-                      </p>
-                    </div>
-                  </div>
-                  {currentUser.createdBy && (
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Created by</p>
-                        <p className="text-xs text-muted-foreground">
-                          {typeof currentUser.createdBy === 'string' 
-                            ? currentUser.createdBy 
-                            : currentUser.createdBy.name || currentUser.createdBy.email}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          JPG, PNG or GIF. Max size 5MB. Click avatar or drag & drop to upload.
                         </p>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  {isEditing ? (
+                    <Input
+                      id="name"
+                      value={editedUser.name}
+                      onChange={(e) =>
+                        setEditedUser({ ...editedUser, name: e.target.value })
+                      }
+                      className="rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{currentUser.name || "No name set"}</p>
                   )}
-                  <div className="flex items-center gap-3">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Role</p>
-                      <p className="text-xs text-muted-foreground">
-                        {currentUser.role}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="activity" className="space-y-6 mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription>
-                  Your latest actions and updates
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {activities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center gap-4 p-3 rounded-xl bg-muted/50"
-                  >
-                    <div
-                      className={`p-2 rounded-full ${
-                        activity.type === "success"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-blue-100 text-blue-600"
-                      }`}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  {isEditing ? (
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editedUser.email}
+                      onChange={(e) =>
+                        setEditedUser({
+                          ...editedUser,
+                          email: e.target.value,
+                        })
+                      }
+                      className="rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{currentUser.email}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  {isEditing ? (
+                    <Select
+                      value={editedUser.department}
+                      onValueChange={(value) =>
+                        setEditedUser({ ...editedUser, department: value })
+                      }
                     >
-                      <CheckCircle className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
-
-        <TabsContent value="achievements" className="space-y-6 mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Achievements & Badges
-                </CardTitle>
-                <CardDescription>
-                  Your accomplishments and milestones
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {achievements.map((achievement) => (
-                    <div
-                      key={achievement.id}
-                      className="p-4 rounded-xl border-2 border-dashed border-muted-foreground/20 text-center"
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Design">Design</SelectItem>
+                        <SelectItem value="Development">
+                          Development
+                        </SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Sales">Sales</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm font-medium">
+                      {currentUser.department}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  {isEditing ? (
+                    <Select
+                      value={editedUser.role}
+                      onValueChange={(value) =>
+                        setEditedUser({ ...editedUser, role: value })
+                      }
                     >
-                      <achievement.icon
-                        className={`h-8 w-8 mx-auto mb-2 ${achievement.color}`}
-                      />
-                      <h3 className="font-semibold">{achievement.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {achievement.description}
-                      </p>
-                    </div>
-                  ))}
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                        <SelectItem value="Manager">Manager</SelectItem>
+                        <SelectItem value="Member">Member</SelectItem>
+                        <SelectItem value="Intern">Intern</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm font-medium">{currentUser.role}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  {isEditing ? (
+                    <Textarea
+                      id="bio"
+                      value={editedUser.bio || ""}
+                      onChange={(e) =>
+                        setEditedUser({ ...editedUser, bio: e.target.value })
+                      }
+                      placeholder="Tell us about yourself..."
+                      className="rounded-xl"
+                      rows={3}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {currentUser.bio || "No bio available"}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6 mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notification Settings
-                </CardTitle>
-                <CardDescription>
-                  Manage your notification preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Email Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive updates via email
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.email}
-                    onCheckedChange={(checked) =>
-                      setNotifications({ ...notifications, email: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Push Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get instant notifications
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.push}
-                    onCheckedChange={(checked) =>
-                      setNotifications({ ...notifications, push: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>SMS Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive text messages
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.sms}
-                    onCheckedChange={(checked) =>
-                      setNotifications({ ...notifications, sms: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Weekly Reports</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get weekly performance summaries
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.weekly}
-                    onCheckedChange={(checked) =>
-                      setNotifications({ ...notifications, weekly: checked })
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+          {/* Quick Info */}
+        </div>
+      </div>
     </div>
   );
 }
