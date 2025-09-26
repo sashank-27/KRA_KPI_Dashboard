@@ -249,13 +249,6 @@ export function Sidebar({
             </Button>
           </div>
 
-          <div className="px-3 py-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
-            </div>
-          </div>
-
           <ScrollArea className="flex-1 px-3 py-2">
             <div className="space-y-1">
               {sidebarItems.map((item) => (
@@ -399,16 +392,7 @@ export function Sidebar({
               </div>
             )}
           </div>
-
-          {sidebarOpen && (
-            <div className="px-3 py-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
-              </div>
-            </div>
-          )}
-
+          
           <ScrollArea className={sidebarOpen ? "flex-1 px-3 py-2" : "flex-1 px-1 py-2"}>
             <div className="space-y-1">
               {sidebarItems.map((item) => (
