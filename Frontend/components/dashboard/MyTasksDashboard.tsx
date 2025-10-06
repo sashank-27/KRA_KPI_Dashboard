@@ -76,6 +76,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
     total: 0,
     inProgress: 0,
     closed: 0,
+    escalated: 0,
   });
   const [escalateDialogOpen, setEscalateDialogOpen] = useState(false);
   const [taskToEscalate, setTaskToEscalate] = useState<DailyTask | null>(null);
@@ -117,6 +118,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   // Fetch user's daily tasks
   useEffect(() => {
     fetchUserTasks();
+    fetchEscalatedTasksCount();
   }, [currentUserId]);
 
   const fetchUserTasks = async () => {
@@ -144,6 +146,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
         total: data.tasks?.length || 0,
         inProgress: data.tasks?.filter((task: DailyTask) => task.status === "in-progress").length || 0,
         closed: data.tasks?.filter((task: DailyTask) => task.status === "closed").length || 0,
+        escalated: 0, // Will be fetched separately
       };
       setStats(taskStats);
     } catch (err) {
@@ -151,6 +154,30 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
       setTasks([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch escalated tasks count for current user
+  const fetchEscalatedTasksCount = async () => {
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/daily-tasks/escalated/${currentUserId}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch escalated tasks: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      const escalatedCount = data.tasks?.length || 0;
+      
+      // Update stats with escalated count
+      setStats(prevStats => ({
+        ...prevStats,
+        escalated: escalatedCount,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch escalated tasks count", err);
     }
   };
 
@@ -168,6 +195,7 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
     if (isRelevant) {
       console.log('Event is relevant to current user, refreshing tasks...');
       fetchUserTasks();
+      fetchEscalatedTasksCount();
     } else {
       console.log('Event is not relevant to current user, ignoring...');
     }
@@ -463,6 +491,23 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
             </div>
           </div>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="bg-white rounded-2xl border shadow-sm p-6"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
+              <ArrowUpRight className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.escalated}</p>
+              <p className="text-sm text-gray-600">Escalated to Me</p>
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       {/* Add Task Button */}
@@ -497,7 +542,6 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>

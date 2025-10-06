@@ -316,7 +316,6 @@ export function EscalatedTasksDashboard({ currentUserId, departments, users }: E
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>

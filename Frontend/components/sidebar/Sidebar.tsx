@@ -50,13 +50,13 @@ type SidebarItem = {
 const getSidebarItems = (isUserAdmin: boolean): SidebarItem[] => {
   const baseItems: SidebarItem[] = [
     {
-      title: "My KRA",
-      icon: <Target />,
+      title: "Daily Tasks",
+      icon: <ClipboardList />,
       isActive: false,
     },
     {
-      title: "Daily Tasks",
-      icon: <ClipboardList />,
+      title: "My KRA",
+      icon: <Target />,
       isActive: false,
     },
     {

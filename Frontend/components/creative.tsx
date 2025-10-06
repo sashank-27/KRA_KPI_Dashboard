@@ -85,10 +85,9 @@ export function KRADashboard() {
 
     fetchUsers();
     fetchDepartments();
-    fetchCurrentUser();
     fetchSystemHealth();
-  fetchKRAs();
-  fetchDailyTasks();
+    fetchKRAs();
+    fetchDailyTasks();
   }, []);
 
 
@@ -136,10 +135,7 @@ export function KRADashboard() {
       const isAdminUser = userData.role === 'admin' || userData.role === 'superadmin';
       setIsUserAdmin(isAdminUser);
       
-      // Set default tab based on role
-      if (isAdminUser && activeTab === "my-kra") {
-        setActiveTab("home"); // Admin users start with Dashboard
-      }
+      // Admin defaults are now handled in the hydration effect
     } catch (err) {
       console.error("Failed to fetch current user", err);
       // Fallback to JWT token data (only on client side)
@@ -160,10 +156,7 @@ export function KRADashboard() {
             joined: new Date().toISOString(),
           });
           
-          // Set default tab based on role
-          if (isAdminUser && activeTab === "my-kra") {
-            setActiveTab("home"); // Admin users start with Dashboard
-          }
+          // Admin defaults are now handled in the hydration effect
         } else {
           // Set a default user if no token is available
           setIsUserAdmin(false);
@@ -343,7 +336,36 @@ export function KRADashboard() {
   });
   const [isLoadingCurrentUser, setIsLoadingCurrentUser] = useState(true);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("my-kra"); // Default to my-kra for non-admin users
+  
+  // Initialize with a safe default for SSR, then hydrate from localStorage
+  const [activeTab, setActiveTab] = useState<string>("my-tasks");
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Hydrate from localStorage after component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('activeTab');
+      if (savedTab) {
+        setActiveTab(savedTab);
+      } else {
+        // No saved tab - check if user is admin to set appropriate default
+        const tokenUser = getCurrentUser();
+        if (tokenUser && (tokenUser.role === 'admin' || tokenUser.role === 'superadmin')) {
+          setActiveTab("home"); // Admin default
+        }
+        // Regular users keep the SSR default of "my-tasks"
+      }
+      setIsHydrated(true);
+    }
+  }, []);
+
+  // Fetch current user data (after hydration to set admin defaults correctly)
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      return;
+    }
+    fetchCurrentUser();
+  }, [isHydrated]);
 
   // Close quick action modals when leaving dashboard tab
   useEffect(() => {
@@ -352,6 +374,13 @@ export function KRADashboard() {
       setCreateDeptOpen(false);
     }
   }, [activeTab]);
+
+  // Persist activeTab to localStorage (only after hydration)
+  useEffect(() => {
+    if (isHydrated && typeof window !== 'undefined') {
+      localStorage.setItem('activeTab', activeTab);
+    }
+  }, [activeTab, isHydrated]);
 
   // Close quick action modals when leaving dashboard tab
   useEffect(() => {
@@ -392,11 +421,19 @@ export function KRADashboard() {
   const [isLoadingSystemHealth, setIsLoadingSystemHealth] = useState(true);
   // Modal input state
 
+  // Custom logout handler that clears saved tab preference
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('activeTab');
+    }
+    logout();
+  };
+
   // Handle tab access restrictions
   useEffect(() => {
     // Only redirect if we have loaded the user data and user is not admin
     if (!isLoadingCurrentUser && !isUserAdmin && (activeTab === "home" || activeTab === "apps")) {
-      setActiveTab("my-kra");
+      setActiveTab("my-tasks");
     }
   }, [isUserAdmin, activeTab, isLoadingCurrentUser]);
 
@@ -468,7 +505,7 @@ export function KRADashboard() {
                       variant="ghost"
                       size="icon"
                       className="rounded-2xl hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200 group"
-                      onClick={logout}
+                      onClick={handleLogout}
                     >
                       <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                     </Button>
@@ -542,7 +579,7 @@ export function KRADashboard() {
                     value="my-tasks"
                     className="rounded-xl data-[state=active]:rounded-xl"
                   >
-                    My Tasks
+                    Daily Tasks
                   </TabsTrigger>
                   <TabsTrigger
                     value="escalated-tasks"
