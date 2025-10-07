@@ -5,9 +5,23 @@ const connectDB = require("./config/db");
 const User = require("./models/User");
 const Department = require("./models/Department");
 const bcrypt = require("bcryptjs");
-
+const fs = require("fs");
+const path = require("path");
 
 const cors = require("cors");
+
+// Ensure upload directories exist
+const uploadDirs = [
+  path.join(__dirname, "uploads"),
+  path.join(__dirname, "uploads", "faqs")
+];
+
+uploadDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`✅ Created directory: ${dir}`);
+  }
+});
 
 // Allow localhost, 127.0.0.1, and network IP for frontend
 const allowedOrigins = [
@@ -20,6 +34,7 @@ const userRoutes = require("./routes/userRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const kraRoutes = require("./routes/kraRoutes");
 const dailyTaskRoutes = require("./routes/dailyTaskRoutes");
+const faqRoutes = require("./routes/faqRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -50,7 +65,10 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-app.use(express.json());
+
+// Parse JSON and URL-encoded bodies
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 // Health check route for frontend connectivity
@@ -62,6 +80,7 @@ app.use("/api", userRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/kras", kraRoutes);
 app.use("/api/daily-tasks", dailyTaskRoutes);
+app.use("/api/faqs", faqRoutes);
 
 app.get("/", (req, res) => {
   res.send("hello world");

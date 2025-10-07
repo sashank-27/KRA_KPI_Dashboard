@@ -31,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DailyTask, NewDailyTask, Department, User as UserType } from "@/lib/types";
 import { getApiBaseUrl } from "@/lib/api";
 import { DailyTaskModal } from "@/components/modals/DailyTaskModal";
+import { CompleteTaskModal } from "@/components/modals/CompleteTaskModal";
 import { getAuthHeaders, requireAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { useSocket, useSocketEvent } from "@/hooks/useSocket";
@@ -82,6 +83,8 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
   const [taskToEscalate, setTaskToEscalate] = useState<DailyTask | null>(null);
   const [escalationReason, setEscalationReason] = useState("");
   const [escalatedTo, setEscalatedTo] = useState("");
+  const [completeTaskModalOpen, setCompleteTaskModalOpen] = useState(false);
+  const [taskToComplete, setTaskToComplete] = useState<DailyTask | null>(null);
 
   // Socket.IO for real-time updates
   const { socket, isConnected } = useSocket();
@@ -291,6 +294,19 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
     } catch (err) {
       console.error("Failed to update task status", err);
       alert(`Failed to update task status: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleCompleteWithSolution = (task: DailyTask) => {
+    setTaskToComplete(task);
+    setCompleteTaskModalOpen(true);
+  };
+
+  const handleCompleteTaskModalClose = (refreshTasks?: boolean) => {
+    setCompleteTaskModalOpen(false);
+    setTaskToComplete(null);
+    if (refreshTasks) {
+      fetchUserTasks(); // Refresh the task list after completing with solution
     }
   };
 
@@ -678,11 +694,11 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleUpdateTaskStatus(task._id, 'closed')}
+                          onClick={() => task.srId ? handleCompleteWithSolution(task) : handleUpdateTaskStatus(task._id, 'closed')}
                           className="text-green-600 border-green-200 hover:bg-green-50"
                         >
                           <CheckCircle className="h-4 w-4 mr-1" />
-                          Complete
+                          Complete{task.srId ? ' & Save Solution' : ''}
                         </Button>
                       )}
                       
@@ -851,6 +867,13 @@ export function MyTasksDashboard({ currentUserId, departments, users }: MyTasksD
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Complete Task with Solution Modal */}
+      <CompleteTaskModal
+        isOpen={completeTaskModalOpen}
+        onClose={handleCompleteTaskModalClose}
+        task={taskToComplete}
+      />
     </div>
   );
 }

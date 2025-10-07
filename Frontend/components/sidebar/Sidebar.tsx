@@ -22,6 +22,7 @@ import {
   UserCog,
   Building2,
   FileText,
+  HelpCircle,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -62,6 +63,11 @@ const getSidebarItems = (isUserAdmin: boolean): SidebarItem[] => {
     {
       title: "Escalated",
       icon: <ArrowUpRight />,
+      isActive: false,
+    },
+    {
+      title: "FAQs",
+      icon: <HelpCircle />,
       isActive: false,
     },
   ];
@@ -262,6 +268,7 @@ export function Sidebar({
                       (item.title === "Escalated" && activeTab === "escalated-tasks") ||
                       (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
                       (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
+                      (item.title === "FAQs" && activeTab === "faqs") ||
                       (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
@@ -283,6 +290,9 @@ export function Sidebar({
                         setMobileMenuOpen(false)
                       } else if (item.title === "KPI Dashboard") {
                         setActiveTab("kpi-dashboard")
+                        setMobileMenuOpen(false)
+                      } else if (item.title === "FAQs") {
+                        setActiveTab("faqs")
                         setMobileMenuOpen(false)
                       } else if (item.items) {
                         toggleExpanded(item.title)
@@ -313,12 +323,20 @@ export function Sidebar({
                             if (item.title === "Management") {
                               if (subItem.title === "All Management") {
                                 handleManagementClick("all")
+                                setMobileMenuOpen(false)
                               } else if (subItem.title === "User Management") {
                                 handleManagementClick("user")
+                                setMobileMenuOpen(false)
                               } else if (subItem.title === "Department Management") {
                                 handleManagementClick("department")
+                                setMobileMenuOpen(false)
                               } else if (subItem.title === "KRA Management") {
                                 handleManagementClick("kra")
+                                setMobileMenuOpen(false)
+                              } else if (subItem.title === "FAQ Management") {
+                                setActiveManagementView("all")
+                                setActiveTab("faq-management")
+                                setMobileMenuOpen(false)
                               }
                             }
                           }}
@@ -408,6 +426,7 @@ export function Sidebar({
                         (item.title === "Escalated" && activeTab === "escalated-tasks") ||
                         (item.title === "Tasks Dashboard" && activeTab === "tasks-dashboard") ||
                         (item.title === "KPI Dashboard" && activeTab === "kpi-dashboard") ||
+                        (item.title === "FAQs" && activeTab === "faqs") ||
                         (item.title === "Management" && activeTab === "apps") 
                         ? "bg-primary/10 text-primary" : "hover:bg-muted",
                     )}
@@ -428,6 +447,8 @@ export function Sidebar({
                         setActiveTab("tasks-dashboard")
                       } else if (item.title === "KPI Dashboard") {
                         setActiveTab("kpi-dashboard")
+                      } else if (item.title === "FAQs") {
+                        setActiveTab("faqs")
                       } else if (item.items) {
                         toggleExpanded(item.title)
                       }
@@ -463,6 +484,9 @@ export function Sidebar({
                                 handleManagementClick("department")
                               } else if (subItem.title === "KRA Management") {
                                 handleManagementClick("kra")
+                              } else if (subItem.title === "FAQ Management") {
+                                setActiveManagementView("all")
+                                setActiveTab("faq-management")
                               }
                             }
                           }}

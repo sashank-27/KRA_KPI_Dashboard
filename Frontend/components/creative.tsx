@@ -21,13 +21,16 @@ import { DepartmentManagement } from "@/components/management/DepartmentManageme
 import { UserManagement } from "@/components/management/UserManagement";
 import { KRAManagement } from "@/components/management/KRAManagement";
 import { DailyTaskManagement } from "@/components/management/DailyTaskManagement";
+import { FAQManagement } from "@/components/management/FAQManagement";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { MyKRADashboard } from "@/components/dashboard/MyKRADashboard";
 import { MyTasksDashboard } from "@/components/dashboard/MyTasksDashboard";
 import { EscalatedTasksDashboard } from "@/components/dashboard/EscalatedTasksDashboard";
 import { RealTimeTaskDashboard } from "@/components/dashboard/RealTimeTaskDashboard";
+import { FAQViewerPage } from "@/components/dashboard/FAQViewerPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import dynamic from 'next/dynamic';
 const KPIDashboard = dynamic(() => import('@/app/kpi/page'), { ssr: false });
 import { getApiBaseUrl } from "@/lib/api";
@@ -685,6 +688,16 @@ export function KRADashboard() {
                   )}
                 </TabsContent>
 
+                <TabsContent value="faqs" className="space-y-8 mt-0">
+                  <FAQViewerPage />
+                </TabsContent>
+
+                {isUserAdmin && (
+                  <TabsContent value="faq-management" className="space-y-8 mt-0">
+                    <FAQManagement />
+                  </TabsContent>
+                )}
+
                 {isUserAdmin && (
                   <TabsContent value="tasks-dashboard" className="space-y-8 mt-0">
                     <RealTimeTaskDashboard 
@@ -797,6 +810,7 @@ export function KRADashboard() {
           </Tabs>
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }
