@@ -24,6 +24,7 @@ import {
   FileText,
   HelpCircle,
 } from "lucide-react"
+import TyroneLogo from "@/images/Tyrone-logo-KPI.png";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -177,19 +178,16 @@ export function Sidebar({
           )}
         >
           <div className="flex h-full flex-col border-r">
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
-                  <Wand2 className="size-5" />
-                </div>
-                <div>
-                  <h2 className="font-semibold">Admin Dashboard</h2>
-                  <p className="text-xs text-muted-foreground">Performance Management</p>
-                </div>
+            <div className="flex items-center p-0">
+              <div className="w-12" />
+              <div className="flex-1 flex justify-center">
+                <img src={TyroneLogo.src} alt="Tyrone logo" className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain" />
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
-                <X className="h-5 w-5" />
-              </Button>
+              <div className="w-12 flex justify-end">
+                <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
             <div className="flex-1 flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -205,15 +203,12 @@ export function Sidebar({
           )}
         >
           <div className="flex h-full flex-col">
-            <div className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
-                  <Wand2 className="size-5" />
-                </div>
-                <div>
-                  <h2 className="font-semibold">KRA & KPI Dashboard</h2>
-                  <p className="text-xs text-muted-foreground">Performance Management</p>
-                </div>
+            <div className="p-0">
+              <div className="flex items-center gap-0">
+              <div className="flex items-center justify-center p-0 m-0 bg-transparent">
+                <img src={TyroneLogo.src} alt="Tyrone logo" className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain" />
+              </div>
+
               </div>
             </div>
             <div className="flex-1 flex items-center justify-center">
@@ -240,20 +235,17 @@ export function Sidebar({
         )}
       >
         <div className="flex h-full flex-col border-r">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
-                <Wand2 className="size-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold">Admin Dashboard</h2>
-                <p className="text-xs text-muted-foreground">Performance Management</p>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+      <div className="flex items-center p-0">
+        <div className="w-12" />
+        <div className="flex-1 flex justify-center">
+          <img src={TyroneLogo.src} alt="Tyrone logo" className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain" />
+        </div>
+        <div className="w-12 flex justify-end">
+          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
 
           <ScrollArea className="flex-1 px-3 py-2">
             <div className="space-y-1">
@@ -365,7 +357,7 @@ export function Sidebar({
                   }}
                 >
                   <Avatar className="h-8 w-8 ring-2 ring-white dark:ring-gray-800">
-                    <AvatarImage src={currentUser?.avatar ?? ""} alt="User" />
+                    <AvatarImage src={currentUser?.avatar ?? undefined} alt="User" />
                     <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                       {(currentUser?.name ?? "")
                         .split(' ')
@@ -399,16 +391,10 @@ export function Sidebar({
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="p-4 flex items-center gap-3 justify-center">
-            <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
-              <Wand2 className="size-5" />
+          <div className="p-4 flex items-center gap-0 justify-center">
+            <div className="flex items-center justify-center rounded-2xl bg-transparent">
+                  <img src={TyroneLogo.src} alt="Tyrone logo" className="block h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain" />
             </div>
-            {sidebarOpen && (
-              <div>
-                <h2 className="font-semibold">Admin Dashboard</h2>
-                <p className="text-xs text-muted-foreground">Performance Management</p>
-              </div>
-            )}
           </div>
           
           <ScrollArea className={sidebarOpen ? "flex-1 px-3 py-2" : "flex-1 px-1 py-2"}>
@@ -513,7 +499,7 @@ export function Sidebar({
                     onClick={() => setActiveTab("profile")}
                   >
                     <Avatar className="h-8 w-8 ring-2 ring-white dark:ring-gray-800">
-                      <AvatarImage src={currentUser?.avatar ?? ""} alt="User" />
+                      <AvatarImage src={currentUser?.avatar ?? undefined} alt="User" />
                       <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                         {(currentUser?.name ?? "")
                           .split(' ')

@@ -353,7 +353,7 @@ export function DashboardOverview({
               {recentUsers.map((user, index) => (
                 <div key={user._id || user.username || index} className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatar || ""} alt={user.name} />
+                    <AvatarImage src={user.avatar || undefined} alt={user.name} />
                     <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold">
                       {(user.name ?? "")
                         .split(" ")

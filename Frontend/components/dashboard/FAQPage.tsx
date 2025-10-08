@@ -143,7 +143,7 @@ export function FAQPage() {
           Frequently Asked Questions
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Find answers to common questions about our KRA & KPI Dashboard
+          Find answers to common questions about our KPI & Task mangement
         </p>
       </div>
 

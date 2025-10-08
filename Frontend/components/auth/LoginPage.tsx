@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, Wand2, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import TyroneLogo from "@/images/tyrone-logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,11 +132,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="flex justify-center"
+                className="flex justify-center p-0 m-0"
               >
-                <div className="flex aspect-square size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-lg">
-                  <Wand2 className="size-8" />
-                </div>
+                <img src={TyroneLogo.src} alt="Tyrone logo" className="block h-15 sm:h-18 md:h-24 lg:h-28 w-auto object-contain p-0 m-0" />
               </motion.div>
 
               <motion.div
@@ -147,7 +146,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   Welcome Back
                 </CardTitle>
                 <CardDescription className="text-gray-600">
-                  Sign in to your KRA & KPI Dashboard
+                  Sign in to your KPI & Task mangement
                 </CardDescription>
               </motion.div>
             </CardHeader>

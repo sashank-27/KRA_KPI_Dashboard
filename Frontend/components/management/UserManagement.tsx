@@ -304,7 +304,7 @@ export function UserManagement({
                   {/* User Info */}
                   <div className="col-span-4 flex items-center gap-3">
                     <Avatar className="h-11 w-11 ring-2 ring-gray-100">
-                      <AvatarImage src={user.avatar || ""} alt="User" />
+                      <AvatarImage src={user.avatar || undefined} alt="User" />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold text-sm">
                         {(user.name ?? user.email ?? "U")
                           .split(" ")

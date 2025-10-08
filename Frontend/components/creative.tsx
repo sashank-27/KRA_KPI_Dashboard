@@ -34,6 +34,38 @@ import { Toaster } from "@/components/ui/sonner";
 import dynamic from 'next/dynamic';
 const KPIDashboard = dynamic(() => import('@/app/kpi/page'), { ssr: false });
 import { getApiBaseUrl } from "@/lib/api";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
+
+// Small inline avatar menu component to avoid adding a new file
+function AvatarMenu({ currentUser, onViewProfile, onRemovePhoto }: { currentUser: any, onViewProfile: () => void, onRemovePhoto: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="focus:outline-none"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <Avatar className="h-9 w-9 border-2 border-primary cursor-pointer hover:border-primary/80 transition-colors">
+          <AvatarImage src={currentUser.avatar || undefined} alt="User" />
+          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
+            {(currentUser.name || "User").split(" ").map((n: string) => n[0]).join("")}
+          </AvatarFallback>
+        </Avatar>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-40 rounded-lg border bg-white shadow-lg z-50">
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50" onClick={() => { setOpen(false); onViewProfile(); }}>View Profile</button>
+          {currentUser?.avatar ? (
+            <button className="w-full text-left px-3 py-2 text-red-600 hover:bg-gray-50" onClick={() => { setOpen(false); onRemovePhoto(); }}>Remove Photo</button>
+          ) : null}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function KRADashboard() {
   const isMobile = useIsMobile();
@@ -395,6 +427,7 @@ export function KRADashboard() {
   const [notifications, setNotifications] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
     {}
   );
@@ -439,6 +472,8 @@ export function KRADashboard() {
       setActiveTab("my-tasks");
     }
   }, [isUserAdmin, activeTab, isLoadingCurrentUser]);
+
+  const { toast } = useToast();
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -499,7 +534,7 @@ export function KRADashboard() {
             <PanelLeft className="h-5 w-5" />
           </Button>
           <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-xl font-semibold">KRA & KPI Dashboard</h1>
+            <h1 className="text-xl font-semibold">KPI & Task mangement</h1>
             <div className="flex items-center gap-3">
               <TooltipProvider>
                 <Tooltip>
@@ -536,20 +571,43 @@ export function KRADashboard() {
                 </Tooltip>
               </TooltipProvider>
 
-              <button onClick={() => setActiveTab("profile")}>
-                <Avatar className="h-9 w-9 border-2 border-primary cursor-pointer hover:border-primary/80 transition-colors">
-                  <AvatarImage
-                    src={currentUser.avatar || ""}
-                    alt="User"
-                  />
-                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
-                    {(currentUser.name || "User")
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
+              {/* Avatar with dropdown menu for quick actions (Profile, Remove Photo) */}
+              <div className="relative" ref={undefined as any}>
+                {/* We'll manage open state below */}
+              </div>
+              {/* Confirmation dialog for removing profile photo from header */}
+              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove profile photo?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to remove your profile photo? This will remove it from your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={async () => {
+                      try {
+                        await handleUpdateProfile({ avatar: null as unknown as any });
+                        toast({ title: 'Profile photo removed' });
+                      } catch (err) {
+                        console.error('Failed to remove photo', err);
+                        toast({ title: 'Failed to remove photo' });
+                      } finally {
+                        setConfirmOpen(false);
+                      }
+                    }}>
+                      Remove
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <AvatarMenu
+                currentUser={currentUser}
+                onViewProfile={() => setActiveTab("profile")}
+                onRemovePhoto={() => setConfirmOpen(true)}
+              />
             </div>
           </div>
         </header>

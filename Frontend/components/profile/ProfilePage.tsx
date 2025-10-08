@@ -38,6 +38,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { api } from "@/lib/api";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -81,6 +84,8 @@ export function ProfilePage({
     sms: true,
     weekly: true,
   });
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleSave = async () => {
     try {
@@ -240,7 +245,7 @@ export function ProfilePage({
             <div className="relative">
               <Avatar className="h-24 w-24 border-4 border-white/20">
                 <AvatarImage
-                  src={previewImage || editedUser.avatar || currentUser.avatar || ""}
+                  src={previewImage ?? editedUser.avatar ?? currentUser.avatar ?? undefined}
                   alt={currentUser.name}
                 />
                 <AvatarFallback className="text-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
@@ -358,7 +363,7 @@ export function ProfilePage({
                       >
                         <Avatar className="h-16 w-16 border-2 border-dashed border-gray-300 hover:border-primary transition-colors">
                           <AvatarImage
-                            src={previewImage || editedUser.avatar || currentUser.avatar || ""}
+                            src={previewImage ?? editedUser.avatar ?? currentUser.avatar ?? undefined}
                             alt={currentUser.name}
                           />
                           <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
@@ -389,6 +394,8 @@ export function ProfilePage({
                             <Camera className="h-4 w-4 mr-2" />
                             {isUploadingImage ? "Uploading..." : "Change Photo"}
                           </Button>
+
+                          {/* Cancel preview (revert to existing avatar) */}
                           {previewImage && (
                             <Button
                               type="button"
@@ -402,6 +409,51 @@ export function ProfilePage({
                               <X className="h-4 w-4 mr-2" />
                               Cancel
                             </Button>
+                          )}
+
+                          {/* Remove existing avatar - user must Save to persist */}
+                          {(editedUser.avatar || currentUser.avatar || previewImage) && (
+                            <>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="border-red-500 text-red-500 hover:bg-red-50"
+                                onClick={() => setRemoveDialogOpen(true)}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Remove Photo
+                              </Button>
+
+                              <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove profile photo?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently remove your profile photo. You can upload a new one later.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={async () => {
+                                      try {
+                                        const res = await api.put('/me', { avatar: null });
+                                        const updated = res.data;
+                                        setPreviewImage(null);
+                                        setEditedUser({ ...editedUser, avatar: undefined });
+                                        try { await onUpdateProfile(updated); } catch {}
+                                        toast({ title: 'Profile photo removed' });
+                                      } catch (err: any) {
+                                        console.error('Failed to remove photo', err);
+                                        toast({ title: err?.response?.data?.message || 'Failed to remove photo' });
+                                      } finally {
+                                        setRemoveDialogOpen(false);
+                                      }
+                                    }}>Remove</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
