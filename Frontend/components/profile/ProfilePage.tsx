@@ -41,6 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -241,7 +242,7 @@ export function ProfilePage({
         className="overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white"
       >
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col items-center gap-6 md:flex-row md:items-center">
             <div className="relative">
               <Avatar className="h-24 w-24 border-4 border-white/20">
                 <AvatarImage
@@ -298,7 +299,7 @@ export function ProfilePage({
               </div>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {!isEditing ? (
               <Button
                 className="rounded-2xl bg-white text-purple-700 hover:bg-white/90"
@@ -317,8 +318,7 @@ export function ProfilePage({
                   Save
                 </Button>
                 <Button
-                  variant="outline"
-                  className="rounded-2xl border-white text-white hover:bg-white/10"
+                  className="rounded-2xl bg-white text-green-700 hover:bg-white/90"
                   onClick={handleCancel}
                 >
                   <X className="mr-2 h-4 w-4" />
@@ -354,7 +354,7 @@ export function ProfilePage({
                 {isEditing && (
                   <div className="space-y-4">
                     <Label>Profile Picture</Label>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
                       <div 
                         className="relative cursor-pointer"
                         onDragOver={handleDragOver}
@@ -383,7 +383,7 @@ export function ProfilePage({
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -399,8 +399,8 @@ export function ProfilePage({
                           {previewImage && (
                             <Button
                               type="button"
-                              variant="outline"
                               size="sm"
+                              className="rounded-2xl bg-white text-green-700 hover:bg-white/90"
                               onClick={() => {
                                 setPreviewImage(null);
                                 setEditedUser({ ...editedUser, avatar: currentUser.avatar });
@@ -436,20 +436,39 @@ export function ProfilePage({
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={async () => {
-                                      try {
-                                        const res = await api.put('/me', { avatar: null });
-                                        const updated = res.data;
-                                        setPreviewImage(null);
-                                        setEditedUser({ ...editedUser, avatar: undefined });
-                                        try { await onUpdateProfile(updated); } catch {}
-                                        toast({ title: 'Profile photo removed' });
-                                      } catch (err: any) {
-                                        console.error('Failed to remove photo', err);
-                                        toast({ title: err?.response?.data?.message || 'Failed to remove photo' });
-                                      } finally {
-                                        setRemoveDialogOpen(false);
-                                      }
-                                    }}>Remove</AlertDialogAction>
+                                                const previousAvatar = previewImage ?? editedUser.avatar ?? currentUser.avatar ?? undefined;
+                                                try {
+                                                  const res = await api.put('/me', { avatar: null });
+                                                  const updated = res.data;
+                                                  setPreviewImage(null);
+                                                  setEditedUser({ ...editedUser, avatar: undefined });
+                                                  try { await onUpdateProfile(updated); } catch {}
+                                                  toast({
+                                                    title: 'Profile photo removed',
+                                                    action: previousAvatar ? (
+                                                      <ToastAction altText="Undo remove" onClick={async () => {
+                                                        try {
+                                                          const restoreRes = await api.put('/me', { avatar: previousAvatar });
+                                                          const restored = restoreRes.data;
+                                                          setEditedUser({ ...editedUser, avatar: previousAvatar });
+                                                          try { await onUpdateProfile(restored); } catch {}
+                                                          toast({ title: 'Profile photo restored' });
+                                                        } catch (err) {
+                                                          console.error('Failed to restore photo', err);
+                                                          toast({ title: 'Failed to restore photo' });
+                                                        }
+                                                      }}>
+                                                        Undo
+                                                      </ToastAction>
+                                                    ) : undefined,
+                                                  });
+                                                } catch (err: any) {
+                                                  console.error('Failed to remove photo', err);
+                                                  toast({ title: err?.response?.data?.message || 'Failed to remove photo' });
+                                                } finally {
+                                                  setRemoveDialogOpen(false);
+                                                }
+                                              }}>Remove</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
